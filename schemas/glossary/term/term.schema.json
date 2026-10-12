@@ -1,0 +1,259 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "glossary/terms/term",
+  "title": "Glossary term record",
+  "description": "A record that documents a community's designation for a concept without identifying the designation, concept, carrier, or formal-language term with one another.",
+  "type": "object",
+  "required": [
+    "identity",
+    "name",
+    "body"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "identity": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "description": "Stable carrier identity, normally equal to the Markdown filename stem."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Primary designation displayed to readers."
+    },
+    "body": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Definition and distinctions carried for readers."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Concise independent summary of the concept."
+    },
+    "consent-status": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Freeform consent or access designation carried with the term (the corpus speaks of kin-gated, season-gated, and protocol-gated regions but fixes no value set). Any nonempty string is admitted; the vocabulary of consent-status values is explicitly deferred."
+    },
+    "visibility": {
+      "type": "string",
+      "enum": [
+        "public",
+        "authenticated"
+      ],
+      "description": "Which publication surface may carry the term, under the house surface policy: \"public\" opts the term into the anonymous surface (the public glossary vocabulary, the knowledge garden's public tree); absent or \"authenticated\" keeps it to signed-in readers. Only the term's own carrier can open it to the public."
+    },
+    "type": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The semantic kind instantiated by the resource. This is a resource tag, not a document-format label."
+    },
+    "creator": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The entity that created the resource, when that claim is part of the term's semantics."
+    },
+    "aliases": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Other designations admitted for this concept in the same glossary scope."
+    },
+    "keywords": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+      },
+      "description": "Retrieval or compound-composition keys; they are not aliases by default."
+    },
+    "relations": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+      },
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "string",
+            "minLength": 1
+          },
+          {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ]
+      },
+      "description": "Semantic assertions about identified subjects; provenance and citations do not belong here."
+    },
+    "references": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9-]*[0-9]{4}[a-z0-9-]*$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "authors",
+          "title",
+          "year"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "authors": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "year": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "publication": {
+            "type": "string",
+            "minLength": 1
+          },
+          "publisher": {
+            "type": "string",
+            "minLength": 1
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "doi": {
+            "type": "string",
+            "minLength": 1
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1
+          },
+          "eprint": {
+            "type": "string",
+            "minLength": 1
+          },
+          "volume": {
+            "type": "string",
+            "minLength": 1
+          },
+          "issue": {
+            "type": "string",
+            "minLength": 1
+          },
+          "pages": {
+            "type": "string",
+            "minLength": 1
+          },
+          "edition": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "description": "Published evidence keyed by citekey, separate from semantic relations."
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "date-created": {
+          "type": "string",
+          "format": "date"
+        },
+        "date-modified": {
+          "type": "string",
+          "format": "date"
+        },
+        "date-updated": {
+          "type": "string",
+          "format": "date"
+        },
+        "sources": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "authors": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "tags": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "domain": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scheme": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1
+        },
+        "utterances": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^ni:///sha-256;[A-Za-z0-9_-]{43}$"
+          },
+          "description": "Content addresses of the Leader utterances the record was written from, as the leader-utterances records name them."
+        }
+      },
+      "description": "Custody, carrier metadata, dates, and the Leader utterances the record answers, separate from its semantic assertions. date-created/date-modified/date-updated/authors/tags/id/domain/scheme/status are carrier bookkeeping keys folded here by the admission path when a carrier states them at frontmatter top level; they are never admitted as relations."
+    },
+    "status-function": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "params": {
+          "type": "object",
+          "description": "The status function's capability signature (kappa_R): named argument slots and their types."
+        },
+        "ast": {
+          "description": "The status function's constitutive structure, per the 2026-04-08 note on FARS algebraic readings of work terms. Nested object, array, or string shapes all occur in the corpus; the value is carried verbatim."
+        },
+        "output": {
+          "description": "The status function's declared output type or structure."
+        }
+      },
+      "description": "FARS status-function declaration metadata (Searle's status functions, formalized in the 2026-04-08 note on FARS algebraic readings of work terms). params/ast/output are carrier bookkeeping folded here by the admission path when a carrier states them at frontmatter top level; they are never admitted as relations and never dropped."
+    }
+  }
+}

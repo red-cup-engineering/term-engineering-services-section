@@ -1,0 +1,27 @@
+{
+  "name": "@red-cup-engineering/price-predicate-identification-service",
+  "version": "0.1.0",
+  "description": "Prices the cheapest chain of mld or equal declarations identifying one predicate with another.",
+  "type": "module",
+  "private": false,
+  "license": "MIT",
+  "exports": "./scripts/price-predicate-identification.mjs",
+  "bin": {
+    "price-predicate-identification": "scripts/price-predicate-identification.mjs"
+  },
+  "files": [
+    "scripts",
+    "README.md",
+    "package.json"
+  ],
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "check": "node --check scripts/price-predicate-identification.mjs",
+    "test": "node --test test/*.test.mjs",
+    "pack:dry-run": "npm pack --dry-run --ignore-scripts"
+  },
+  "engines": {
+    "node": ">=24.2.0"
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "name": "@red-cup-engineering/term-engineering-services-section",
+  "version": "0.3.0",
+  "type": "module",
+  "description": "Engineering policy and operations for semantically admitted Markdown glossary terms and their filename-keyword knowledge web.",
+  "exports": {
+    "./carrier": "./src/term-carrier.mjs",
+    "./migration": "./src/term-migration.mjs",
+    "./description": "./src/term-description.mjs",
+    "./relations": "./src/term-relation-keys.mjs",
+    "./glossary-index": "./src/glossary-index.mjs",
+    "./glossary-skos": "./src/glossary-skos.mjs",
+    "./term-carrier": "./src/term-carrier.mjs",
+    "./term-operations": "./src/term-operations.mjs",
+    "./term-migration": "./src/term-migration.mjs",
+    "./term-relation-keys": "./src/term-relation-keys.mjs",
+    "./term-schema": "./schemas/glossary/term/term.schema.mjs",
+    "./term.schema.json": "./schemas/glossary/term/term.schema.json",
+    "./relation-predicates.json": "./schemas/glossary/term/relation-predicates.json",
+    "./glossary-token": "./src/glossary-token.mjs",
+    "./glossary-foam": "./src/glossary-foam.mjs"
+  },
+  "bin": {
+    "term": "apps/term-cli.mjs",
+    "project-set-of-term-records": "scripts/project-set-of-term-records.mjs",
+    "project-glossary-skos": "scripts/project-glossary-skos.mjs",
+    "project-glossary-foam": "scripts/project-glossary-foam.mjs"
+  },
+  "files": [
+    "apps/",
+    "data/records/",
+    "src/",
+    "scripts/"
+  ],
+  "scripts": {
+    "check": "node --check src/*.mjs && node --check scripts/*.mjs && node --check apps/*.mjs && node --check schemas/glossary/term/*.mjs && node --check test/*.test.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@red-cup-engineering/computer-filepath-engineering-services-section": "workspace:*",
+    "@red-cup-engineering/computer-text-content-engineering-services-section": "workspace:*",
+    "@red-cup-engineering/cryptographic-computer-data-engineering-services-section": "workspace:*",
+    "@red-cup-engineering/computer-file-engineering-services-section": "workspace:*",
+    "@red-cup-engineering/javascript-file-services-section": "workspace:*",
+    "@red-cup-engineering/javascript-node-services-section": "workspace:*",
+    "@red-cup-engineering/markdown-engineering-services-section": "workspace:*",
+    "@red-cup-engineering/computer-triplet-serialized-content-engineering-services-section": "workspace:*",
+    "@red-cup-engineering/signcell": "workspace:*",
+    "@red-cup-engineering/computer-data-engineering-services-section": "workspace:*"
+  },
+  "license": "UNLICENSED"
+}

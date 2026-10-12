@@ -1,0 +1,12 @@
+{
+  "type": "predicate-identification-ledger",
+  "date": "2026-09-04",
+  "declarations": [
+    {
+      "a": "part-of",
+      "kind": "mld",
+      "b": "component-of",
+      "carrier": "data/records/schema/glossary/term/relation-predicates.json"
+    }
+  ]
+}
