@@ -47,7 +47,8 @@
     "@red-cup-engineering/markdown-engineering-services-section": "workspace:*",
     "@red-cup-engineering/computer-triplet-serialized-content-engineering-services-section": "workspace:*",
     "@red-cup-engineering/signcell": "workspace:*",
-    "@red-cup-engineering/computer-data-engineering-services-section": "workspace:*"
+    "@red-cup-engineering/computer-data-engineering-services-section": "workspace:*",
+    "@red-cup-engineering/javascript-node-operation-engineering-services-section": "workspace:*"
   },
   "license": "UNLICENSED"
 }
