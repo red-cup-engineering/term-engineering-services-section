@@ -30,7 +30,8 @@
     "apps/",
     "data/records/",
     "src/",
-    "scripts/"
+    "scripts/",
+    "schemas/"
   ],
   "scripts": {
     "check": "node --check src/*.mjs && node --check scripts/*.mjs && node --check apps/*.mjs && node --check schemas/glossary/term/*.mjs && node --check test/*.test.mjs",
