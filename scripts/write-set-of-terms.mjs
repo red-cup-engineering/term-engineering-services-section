@@ -2,7 +2,7 @@
 import { admitTermMarkdown } from "./admit-term.mjs";
 import { renderTermMarkdown } from "./render-term.mjs";
 import { writeTerm } from "./write-term.mjs";
-import { runJavascriptNodeOperation } from "@red-cup-engineering/javascript-node-services-section/operation";
+import { runJavascriptNodeOperation } from "@red-cup-engineering/javascript-node-operation-service";
 
 /** Write each independently admitted term, accounting for every one refused. */
 export async function writeSetOfTerms(requests, operations = {}) {
