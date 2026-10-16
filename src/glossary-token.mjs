@@ -1,4 +1,4 @@
-import { defineSchemaType } from "@red-cup-engineering/computer-data-engineering-services-section/type-system/schema-type";
+import { defineSchemaType } from "@red-cup-engineering/signcell/type-system/schema-type";
 import { createTypedMark, typedMarkIdentity } from "@red-cup-engineering/signcell/typed-mark";
 
 /**
