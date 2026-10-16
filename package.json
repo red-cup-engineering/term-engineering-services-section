@@ -1,6 +1,6 @@
 {
   "name": "@red-cup-engineering/term-engineering-services-section",
-  "version": "0.3.0",
+  "version": "0.3.2",
   "type": "module",
   "description": "Engineering policy and operations for semantically admitted Markdown glossary terms and their filename-keyword knowledge web.",
   "exports": {
@@ -38,16 +38,20 @@
     "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
-    "@red-cup-engineering/computer-filepath-engineering-services-section": "workspace:*",
-    "@red-cup-engineering/computer-text-content-engineering-services-section": "workspace:*",
-    "@red-cup-engineering/cryptographic-computer-data-engineering-services-section": "workspace:*",
-    "@red-cup-engineering/computer-file-engineering-services-section": "workspace:*",
-    "@red-cup-engineering/javascript-file-services-section": "workspace:*",
-    "@red-cup-engineering/javascript-node-services-section": "workspace:*",
-    "@red-cup-engineering/markdown-engineering-services-section": "workspace:*",
-    "@red-cup-engineering/computer-triplet-serialized-content-engineering-services-section": "workspace:*",
-    "@red-cup-engineering/signcell": "workspace:*",
-    "@red-cup-engineering/computer-data-engineering-services-section": "workspace:*"
+    "@red-cup-engineering/read-markdown-structure-service": "0.2.0",
+    "@red-cup-engineering/read-markdown-frontmatter-service": "0.2.0",
+    "@red-cup-engineering/computer-filepath-engineering-services-section": "0.1.0",
+    "@red-cup-engineering/computer-text-content-engineering-services-section": "0.1.0",
+    "@red-cup-engineering/cryptographic-computer-data-engineering-services-section": "0.3.1",
+    "@red-cup-engineering/computer-file-engineering-services-section": "0.4.0",
+    "@red-cup-engineering/signcell": "0.2.0",
+    "@red-cup-engineering/computer-data-engineering-services-section": "0.2.0",
+    "@red-cup-engineering/read-markdown-features-service": "0.2.0",
+    "@red-cup-engineering/javascript-file-services-section": "0.1.1",
+    "@red-cup-engineering/javascript-node-services-section": "0.3.2",
+    "@red-cup-engineering/markdown-engineering-services-section": "0.5.2",
+    "@red-cup-engineering/computer-triplet-serialized-content-engineering-services-section": "0.1.1"
   },
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "private": false
 }

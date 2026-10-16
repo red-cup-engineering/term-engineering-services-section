@@ -1,9 +1,9 @@
-import { projectMarkdownFeatures } from "@red-cup-engineering/markdown-engineering-services-section/read-markdown-features";
+import { projectMarkdownFeatures } from "@red-cup-engineering/read-markdown-features-service";
 import { replaceMarkdownLinkTarget } from "@red-cup-engineering/markdown-engineering-services-section/replace-markdown-link-target";
-import { readMarkdownSource, readMarkdownStructure } from "@red-cup-engineering/markdown-engineering-services-section/read-markdown-structure";
+import { readMarkdownSource, readMarkdownStructure } from "@red-cup-engineering/read-markdown-structure-service";
 import { basename, extname } from "node:path";
 import { mutateMarkdownFrontmatter } from "@red-cup-engineering/markdown-engineering-services-section/mutate-markdown-frontmatter";
-import { readMarkdownFrontmatter } from "@red-cup-engineering/markdown-engineering-services-section/read-markdown-frontmatter";
+import { readMarkdownFrontmatter } from "@red-cup-engineering/read-markdown-frontmatter-service";
 import { migrateLegacyTermMarkdown, normalizeTermAliases, normalizeTermDescription, normalizeTermName, readTermMarkdown, renderTermMarkdown, termStem } from "./term-carrier.mjs";
 import { sha256Hex } from "@red-cup-engineering/cryptographic-computer-data-engineering-services-section/integrity";
 
