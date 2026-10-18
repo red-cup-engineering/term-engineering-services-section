@@ -3,6 +3,11 @@
   "version": "0.3.2",
   "type": "module",
   "description": "Engineering policy and operations for semantically admitted Markdown glossary terms and their filename-keyword knowledge web.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/red-cup-engineering/computer-systems-engineering-services-section.git",
+    "directory": "services/computer-knowledge-systems-services-section/services/computer-glossary-systems-engineering-services-section/services/term-engineering-services-section"
+  },
   "exports": {
     "./carrier": "./src/term-carrier.mjs",
     "./migration": "./src/term-migration.mjs",
