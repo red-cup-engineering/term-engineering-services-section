@@ -4,6 +4,11 @@ on:
     paths:
       - '.github/workflows/term-schema-receiving.yml'
       - 'schemas/glossary/term/**'
+      - 'src/term-science-schema.mjs'
+      - 'src/term-carrier.mjs'
+      - 'scripts/project-term-science-schema.mjs'
+      - 'test/section-shape.test.mjs'
+      - 'test/term-carrier.test.mjs'
       - 'test/term-schema-package-receiving.test.mjs'
       - 'package.json'
   push:
@@ -11,6 +16,11 @@ on:
     paths:
       - '.github/workflows/term-schema-receiving.yml'
       - 'schemas/glossary/term/**'
+      - 'src/term-science-schema.mjs'
+      - 'src/term-carrier.mjs'
+      - 'scripts/project-term-science-schema.mjs'
+      - 'test/section-shape.test.mjs'
+      - 'test/term-carrier.test.mjs'
       - 'test/term-schema-package-receiving.test.mjs'
       - 'package.json'
   workflow_dispatch:
