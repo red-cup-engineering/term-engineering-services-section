@@ -108,6 +108,15 @@ test("an authorized Mandarin lexical hit reaches that sense's original source-wi
     scheme: chosen.scheme, identity: chosen.identity, predicate: FOAM_PREDICATES.notation,
   });
   assert.equal(claim.concept.id, chosen.token);
+  const claimedByToken = glossaryClaimsAt(local, {
+    token: chosen.token, predicate: FOAM_PREDICATES.notation,
+  });
+  assert.deepEqual(claimedByToken, claim,
+    "a lexical hit's canonical SignCell token reads the exact same source-witnessed claims");
+  assert.throws(() => glossaryClaimsAt(local, {
+    token: glossaryConceptToken(BETA, "language-space").id,
+  }), /outside the selected source cut/,
+    "a local boundary concept token cannot be used to read definitions outside its cut");
   assert.equal(claim.cells.length, 1);
   assert.equal(claim.cells[0].subject.id, chosen.token);
   assert.equal(claim.cells[0].object.id, glossarySignToken("language-space").id);
@@ -120,4 +129,41 @@ test("an authorized Mandarin lexical hit reaches that sense's original source-wi
     scheme: BETA, identity: chosen.identity,
   }), /outside the selected source cut/,
     "a neighbor's typed concept does not grant access to its definitions");
+});
+
+test("canonical NI claim selectors preserve original multi-facet witnesses and type admission", () => {
+  const source = foam([
+    word(ALPHA, "terms", "team"), word(ALPHA, "topics", "team"),
+    word(BETA, "terms", "team"),
+  ]);
+  const alphaToken = glossaryConceptToken(ALPHA, "team").id;
+  const betaToken = glossaryConceptToken(BETA, "team").id;
+  const selected = { predicate: FOAM_PREDICATES.notation };
+  const alpha = glossaryClaimsAt(source, { token: alphaToken, ...selected });
+  const beta = glossaryClaimsAt(source, { token: betaToken, ...selected });
+  assert.deepEqual(alpha, glossaryClaimsAt(source, {
+    scheme: ALPHA, identity: "team", ...selected,
+  }));
+  assert.equal(alpha.cells[0].for.length, 2);
+  assert.equal(alpha.sources[0].edges.length, 2);
+  assert.equal(beta.cells[0].for.length, 1);
+  assert.notEqual(alpha.concept.id, beta.concept.id);
+  assert.throws(() => glossaryClaimsAt(source, {
+    token: glossarySignToken("team").id,
+  }), /not present as a typed concept/,
+    "a lexical SignCell NI is not interchangeable with a scheme-qualified concept NI");
+  assert.throws(() => glossaryClaimsAt(source, {
+    token: "ni:///sha-256;" + "Z".repeat(43),
+  }), /not present as a typed concept/,
+    "an unknown valid NI is not a negated claim or an invented concept");
+  assert.throws(() => glossaryClaimsAt(source, {
+    token: "ni:///sha-256;broken",
+  }), /canonical NI token/);
+  assert.throws(() => glossaryClaimsAt(source, {
+    token: alphaToken, scheme: BETA,
+  }), /exactly one source concept/,
+    "caller may not combine coordinates to override the authenticated selected source");
+  assert.throws(() => glossaryClaimsAt(source, {
+    token: alphaToken, actor: "untrusted",
+  }), /exactly one source concept/);
 });
