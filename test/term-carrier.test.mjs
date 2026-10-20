@@ -197,7 +197,7 @@ test("name defaults to the identity with hyphens turned to spaces when the origi
 
 
 test("an explicit empty YAML fence is not silently laundered into an authored term record", () => {
-  const empty = recognizeTermMarkdown({ text: "---\\n---\\n" + body + "\\n", filename: "stellar-evolution.md" });
+  const empty = recognizeTermMarkdown({ text: "---\n---\n" + body + "\n", filename: "stellar-evolution.md" });
   assert.equal(empty.admitted, false);
   assert.ok(empty.findings.some(({ rule }) => rule === "markdown"),
     "an explicit YAML null is not an object-valued term record under the upstream Markdown codec");
