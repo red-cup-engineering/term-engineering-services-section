@@ -1,9 +1,45 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { migrateLegacyTermMarkdown, recognizeTermMarkdown, renderTermMarkdown } from "../src/term-carrier.mjs";
+import { TERM_KEYS, migrateLegacyTermMarkdown, recognizeTermDocument, recognizeTermMarkdown, renderTermMarkdown } from "../src/term-carrier.mjs";
+import { TERM_RECORD_SCHEMA, admitTermRecord } from "../schemas/glossary/term/term.schema.mjs";
 import { writeTerm } from "../src/term-operations.mjs";
 
 const body = "A model is a deliberately limited representation used to answer a stated class of questions about a system.";
+
+test("the Draft 2020-12 term schema and the actual Markdown reader enforce one closed typed resource vocabulary", () => {
+  assert.equal(TERM_RECORD_SCHEMA.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(TERM_RECORD_SCHEMA.additionalProperties, false,
+    "a schema exported to downstream consumers must refuse what the original term reader refuses");
+  assert.deepEqual(TERM_KEYS, Object.keys(TERM_RECORD_SCHEMA.properties),
+    "frontmatter admission derives its canonical field names from the upstream schematic resource");
+
+  const record = { identity: "model", name: "Model", body,
+    type: "scientific-model", creator: "Original Author",
+    provenance: { "date-created": "2026-10-20" },
+    relations: { "acts-on": "system" } };
+  assert.equal(admitTermRecord(record), record);
+  assert.throws(() => admitTermRecord({ ...record, inventedKey: "undocumented authority" }),
+    /term record does not admit inventedKey/);
+
+  const recognized = recognizeTermDocument({
+    filename: "model.md", body,
+    frontmatter: { name: "Model", type: "scientific-model",
+      creator: "Original Author", "date-created": "2026-10-20", "acts-on": "system" },
+  });
+  assert.equal(recognized.admitted, true, JSON.stringify(recognized.findings));
+  assert.deepEqual(recognized.relations, { "acts-on": "system" });
+  assert.equal(recognized.provenance["date-created"], "2026-10-20");
+  assert.equal(recognized.type, "scientific-model");
+  assert.equal(recognized.creator, "Original Author");
+
+  const unknown = recognizeTermDocument({
+    filename: "model.md", body,
+    frontmatter: { name: "Model", "opaque-thing": "not an admitted predicate" },
+  });
+  assert.equal(unknown.admitted, false);
+  assert.ok(unknown.findings.some(({ rule, message }) =>
+    rule === "unknown-key" && message.includes("opaque-thing")));
+});
 
 test("science record projects through Markdown with filename identity and first-class evidence", () => {
   const text = renderTermMarkdown({ identity: "model", name: "Model", aliases: ["representation"], keywords: ["system"], relations: { "acts-on": "system" }, references: { smith2024: { authors: ["A. Smith"], title: "Models", year: 2024, url: "https://example.com/models" } }, provenance: { "date-created": "2026-09-01", sources: ["smith2024"] }, body });
