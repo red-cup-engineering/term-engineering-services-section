@@ -24,14 +24,13 @@ A term cites the Leader utterances it answers in `provenance.utterances`, as the
 
 ## Carrier identity and assertions
 
-The admission path (`recognizeTermMarkdown`, `admitTermMarkdown`, and the `*InVault` wrappers) preserves frontmatter assertions as they occur in the carrier:
+The admission path (`recognizeTermMarkdown`, `admitTermMarkdown`, and the `*InVault` wrappers) reads the original Markdown without rewriting its bytes, then projects its claims through one source-owned **JSON Schema Draft 2020-12** term resource (`schemas/glossary/term/term.schema.json`). The declared top-level property set is closed and supplies `TERM_KEYS`; the original `admitTermRecord` and the exported schema must refuse the same unknown resource members. The projection preserves the original claims while assigning each to its admitted semantic role:
 
 - **Identity.**
   `identity` is derived from the Markdown filename stem when the frontmatter states none.
   An explicit `identity` must still equal the stem; a mismatch refuses admission.
 - **Assertions.**
-  Each frontmatter field is direct carrier content. The service neither classifies fields as metadata nor moves them into `provenance`, `relations`, or `status-function`. `type: intelligence`, `creator: Homo sapiens`, dates, tags, and relation predicates such as `requires: [light]` remain exactly where their author stated them.
-  Existing nested objects are retained only when they were explicitly supplied; they are not a target form for migration.
+  `type: intelligence` and `creator: Homo sapiens` are first-class term attributes. Recognized carrier metadata such as dates and tags becomes the typed `provenance` projection; authorized relation predicates such as `requires: [light]` become `relations`; declared FARS `params`/`ast`/`output` become `status-function`. An existing nested statement with conflicting content is a **refusal**, not a silent overwrite. An unknown field is not an arbitrary extension point or an automatically authorized predicate; it remains source-authored but unadmitted until the appropriate upstream type, vocabulary and consuming purpose are established. The read does not mutate the authored Markdown.
 - **Visibility.**
   `visibility` is `public` or `authenticated` (the default when absent). Only `public` opens a term to anonymous surfaces such as the public vocabulary and the knowledge garden's public tree.
 
