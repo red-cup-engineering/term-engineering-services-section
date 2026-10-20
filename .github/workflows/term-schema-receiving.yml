@@ -44,3 +44,19 @@ jobs:
           path: dist/*.tgz
           if-no-files-found: error
           retention-days: 30
+  native-source-suite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: '24'
+      - name: Install original pinned Group dependencies
+        run: npm install --no-audit --no-fund --ignore-scripts --fetch-retries=0 --fetch-timeout=30000
+      - name: Execute complete original native Term Engineering checks
+        run: |
+          npm run check
+          npm test
