@@ -186,3 +186,34 @@ test("unresolved relation retains a typed SignCell sign without minting a target
   ]);
   assert.deepEqual(reader.neighborhood("missing").incoming, []);
 });
+
+test("UAX29 lexical lookup recovers multilingual labels while SignCell scheme-specific senses stay distinct", () => {
+  const alpha = "services/alpha-services-section";
+  const beta = "services/beta-services-section";
+  const word = (scheme, name, aliases = [], keywords = []) => ({
+    path: scheme + "/content/text/glossary/terms/language-space.md",
+    filename: "language-space.md",
+    text: renderTermMarkdown({
+      identity: "language-space", name, aliases, keywords, body: operationBody,
+    }),
+  });
+  const reader = createGlossaryIndexReader(projectGlossaryIndex({
+    root: "/glossary", documents: [
+      word(alpha, "语言空间", ["L-Space", "語言空間"], ["因果集"]),
+      word(beta, "语义空间"),
+    ],
+  }));
+  const hits = reader.search("空间").filter(hit => hit.identity === "language-space");
+  assert.equal(hits.length, 2, "both authored Chinese names contain a lexical 空间 segment");
+  assert.notEqual(hits[0].token, hits[1].token, "same filename sign does not identify different senses");
+  assert.equal(hits[0].sign, hits[1].sign, "same spelled carrier remains one SignCell lexical sign");
+  assert.deepEqual(reader.search("语言空间").map(hit => hit.scheme), [alpha],
+    "an authored name has a stronger exact lexical reading");
+  assert.deepEqual(reader.search("L-Space").map(hit => hit.scheme), [alpha],
+    "only the originally authored alias connects English to this concept");
+  assert.deepEqual(reader.search("語言空間").map(hit => hit.scheme), [alpha],
+    "traditional Han remains an explicitly authored alias, never an inferred equivalence");
+  assert.deepEqual(reader.search("因果集").map(hit => hit.scheme), [alpha],
+    "the source keyword must be segmented by the same Unicode provider as queries");
+  assert.equal(reader.resolve("language-space") === undefined, false);
+});
