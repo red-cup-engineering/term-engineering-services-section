@@ -53,3 +53,19 @@ test("no unseen claim becomes denial, and hidden concept cannot be recovered via
   assert.throws(() => glossaryClaimsAt(source, { scheme: ALPHA, identity: "secret" }), TypeError);
   assert.throws(() => glossaryClaimsAt(source, { scheme: ALPHA, identity: "team", actor: "someone-else" }), /exact scheme/);
 });
+
+
+test("querying a local foam refuses boundary-only concept references rather than inventing absence", () => {
+  const index = projectGlossaryIndex({ root: "/glossary", documents: [
+    word(ALPHA, "terms", "team"), word(BETA, "terms", "team"),
+  ] });
+  const selected = projectGlossaryFoam(index, {
+    concept: { scheme: ALPHA, identity: "team" },
+  });
+  const local = glossaryClaimsAt(selected, { scheme: ALPHA, identity: "team", predicate: FOAM_PREDICATES.notation });
+  const whole = glossaryClaimsAt(projectGlossaryFoam(index),
+    { scheme: ALPHA, identity: "team", predicate: FOAM_PREDICATES.notation });
+  assert.deepEqual(local.cells, whole.cells);
+  assert.deepEqual(local.sources, whole.sources);
+  assert.throws(() => glossaryClaimsAt(selected, { scheme: BETA, identity: "team" }), /outside the selected source cut/);
+});
