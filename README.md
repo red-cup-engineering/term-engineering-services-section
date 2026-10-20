@@ -106,3 +106,7 @@ Nodes come from the data layer's shared builders (`definedTermJsonLd`, `definedT
 `scripts/project-glossary-skos.mjs` (bin `project-glossary-skos`, `--root --index --out [--base] [--audience public|authenticated]`) indexes a root and writes both.
 
 `recognizeTermDocument({ frontmatter, body, filename })` is the recognition path for a carrier some other reader already parsed (a vault room, say); `recognizeTermMarkdown` parses and delegates to it.
+
+### Multiscript lexical recovery and source concept identity (candidate)
+
+The glossary reader consumes the original Computer Text `segmentSearchWords` (UAX #29 / `Intl.Segmenter('und')`, candidate 0.1.1-dev.0) rather than an ASCII-only local regex. This is a *search ranking projection*, not a new tokenizer owner: native SignCell scheme-qualified concept addresses, authored aliases, original definitions, witness-bearing SignGraph claims and per-Actor source authorization remain unchanged. Full Chinese, Arabic, accented and other Unicode words can enter lexical retrieval; source-owned SKOS alternative labels are the only valid grounds for cross-language association, not similarity of tokens. ICU version/tailoring, supplier publication, source-local Node suite, and original CAIRN/MetroPlat receiver admission remain qualification requirements. Source candidate term version: 0.3.3-dev.0, not an installed release.
