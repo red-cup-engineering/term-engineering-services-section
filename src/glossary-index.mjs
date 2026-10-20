@@ -1,5 +1,6 @@
 import { RELATION_PREDICATE_RANGES, recognizeTermMarkdown } from "./term-carrier.mjs";
 import { glossaryConceptId, glossarySignToken } from "./glossary-token.mjs";
+import { segmentSearchWords } from "@red-cup-engineering/computer-text-content-engineering-services-section/text";
 import { confinePath } from "@red-cup-engineering/computer-filepath-engineering-services-section/filepath";
 import { walkPosixPathsSync } from "@red-cup-engineering/computer-filepath-engineering-services-section/walk-posix-paths";
 const EXCLUDED_DIRECTORY_NAMES = ["legacy", "triage", "node_modules", "dist", "test", "fixtures"];
@@ -71,9 +72,6 @@ const SEARCH_WEIGHTS = Object.freeze({ nameExact: 100, name: 40, alias: 25, keyw
 /** Record fields carried from a recognized term into a glossary index record, in their carried order. */
 const RECORD_FIELDS = Object.freeze(["identity", "name", "description", "consent-status", "visibility", "type", "aliases", "keywords", "relations", "references", "provenance", "body"]);
 
-function tokenize(text) {
-  return typeof text === "string" ? text.toLowerCase().split(/[^a-z0-9]+/u).filter(Boolean) : [];
-}
 
 function nonEmpty(value) {
   if (value === undefined) return false;
@@ -157,13 +155,17 @@ function carrierRelationEntries(record) {
   return Object.entries(record.relations ?? {}).filter(([predicate]) => RELATION_PREDICATE_RANGES[predicate] === "carrier");
 }
 
-function scoreRecord(record, queryTokens, wholeQuery) {
-  const nameTokens = tokenize(record.name);
+function scoreRecord(record, queryTokens) {
+  const nameTokens = segmentSearchWords(record.name);
   let score = 0;
-  if (wholeQuery !== "" && nameTokens.join(" ") === wholeQuery) score += SEARCH_WEIGHTS.nameExact;
-  const aliasTokens = (record.aliases ?? []).flatMap(tokenize);
-  const keywordTokens = record.keywords ?? [];
-  const descriptionTokens = tokenize(record.description);
+  // Equality of lexical search key sequences ranks a name, it NEVER proves
+  // source-concept identity or translation. SignCell concept IDs stay upstream.
+  if (queryTokens.length > 0 && nameTokens.length === queryTokens.length &&
+      nameTokens.every((part, at) => part === queryTokens[at]))
+    score += SEARCH_WEIGHTS.nameExact;
+  const aliasTokens = (record.aliases ?? []).flatMap(segmentSearchWords);
+  const keywordTokens = (record.keywords ?? []).flatMap(segmentSearchWords);
+  const descriptionTokens = segmentSearchWords(record.description ?? "");
   for (const token of queryTokens) {
     if (nameTokens.includes(token)) score += SEARCH_WEIGHTS.name;
     if (aliasTokens.includes(token)) score += SEARCH_WEIGHTS.alias;
@@ -296,11 +298,10 @@ export function createGlossaryIndexReader(index) {
   function search(query, { limit } = {}) {
     if (typeof query !== "string" || query.trim() === "") throw new TypeError("query must be nonempty text");
     const effectiveLimit = resolveSearchLimit(limit);
-    const wholeQuery = query.trim().toLowerCase();
-    const queryTokens = tokenize(query);
+    const queryTokens = segmentSearchWords(query);
     const results = [];
     for (const record of index.records) {
-      const score = queryTokens.length === 0 ? 0 : scoreRecord(record, queryTokens, wholeQuery);
+      const score = queryTokens.length === 0 ? 0 : scoreRecord(record, queryTokens);
       if (score > 0) results.push(Object.freeze({
         identity: record.identity,
         sign: glossarySignToken(record.identity).id,
