@@ -1,4 +1,11 @@
 #!/usr/bin/env node
-import { projectTermScienceSchema } from "../src/term-science-schema.mjs";
-export { projectTermScienceSchema } from "../src/term-science-schema.mjs";
-if (import.meta.url === `file://${process.argv[1]}`) process.stdout.write(`${JSON.stringify(await projectTermScienceSchema({ source: process.argv[2], destination: process.argv[3] }))}\n`);
+import { projectTermAdmissionSchema, projectTermScienceSchema } from "../src/term-science-schema.mjs";
+export { projectTermAdmissionSchema, projectTermScienceSchema } from "../src/term-science-schema.mjs";
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const args = process.argv.slice(2);
+  const result = args[0] === "--admission"
+    ? await projectTermAdmissionSchema({ source: args[1], vocabulary: args[2], destination: args[3] })
+    : await projectTermScienceSchema({ source: args[0], destination: args[1] });
+  process.stdout.write(`${JSON.stringify({ ...result, bytes: undefined })}\n`);
+}

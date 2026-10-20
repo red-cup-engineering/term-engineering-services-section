@@ -24,16 +24,36 @@ A term cites the Leader utterances it answers in `provenance.utterances`, as the
 
 ## Carrier identity and assertions
 
-The admission path (`recognizeTermMarkdown`, `admitTermMarkdown`, and the `*InVault` wrappers) preserves frontmatter assertions as they occur in the carrier:
+The original Lenticule Science schema (`schemas/glossary/term/term.schema.json`, `$id: glossary/terms/term`) is a broader **Draft 2020-12 scientific resource**; it permits extensible source assertions. Its independently source-qualified original is `lenticule-science/science-services-section` → `services/information-science-services-section/services/communication-science-services-section/services/glossary-science-services-section/services/term-science-services-section/schemas/glossary/terms/term.schema.json` (observed Science blob `cd4c2631ee678638725b5d2b56b9eb2634b9a5cc`). Engineering **must not reuse the same `$id` for a different admission predicate**.
+
+The existing `src/term-science-schema.mjs` now derives a distinct engineering refinement (`schemas/glossary/term/term-admission.schema.json`, `$id: https://561.group/ns/term-engineering/admitted-term/v1`) from the original scientific schema plus the original named-predicate vocabulary. The derived admission profile closes the top-level carrier fields, while science retains its broader declared possibilities. The package exports both resources and the source-owned `./term-schema` module imports the *engineering* profile for `admitTermRecord`. `TERM_KEYS` is derived from that exact profile. The source and downstream types therefore have explicit, independently testable boundaries.
+
+Reproduce the profile with `node scripts/project-term-science-schema.mjs --admission schemas/glossary/term/term.schema.json schemas/glossary/term/relation-predicates.json schemas/glossary/term/term-admission.schema.json`. Do not claim source Science revisions are installed merely because this checked-in Science projection exists; independently select its source when verifying a new scientific revision.
+
+The admission path (`recognizeTermMarkdown`, `admitTermMarkdown`, and the `*InVault` wrappers) reads original Markdown without rewriting its bytes, then assigns claims to typed roles:
 
 - **Identity.**
   `identity` is derived from the Markdown filename stem when the frontmatter states none.
   An explicit `identity` must still equal the stem; a mismatch refuses admission.
 - **Assertions.**
-  Each frontmatter field is direct carrier content. The service neither classifies fields as metadata nor moves them into `provenance`, `relations`, or `status-function`. `type: intelligence`, `creator: Homo sapiens`, dates, tags, and relation predicates such as `requires: [light]` remain exactly where their author stated them.
-  Existing nested objects are retained only when they were explicitly supplied; they are not a target form for migration.
+  `type: intelligence` and `creator: Homo sapiens` are first-class term attributes. Recognized carrier metadata such as dates and tags becomes the typed `provenance` projection; authorized relation predicates such as `requires: [light]` become `relations`; declared FARS `params`/`ast`/`output` become `status-function`. An existing nested statement with conflicting content is a **refusal**, not a silent overwrite. An unknown field is not an arbitrary extension point or an automatically authorized predicate; it remains source-authored but unadmitted until the appropriate upstream type, vocabulary and consuming purpose are established. The read does not mutate the authored Markdown.
+- **Relationship predicates and types.**
+  The original `schemas/glossary/term/relation-predicates.json` declares 94
+  authorized predicate keys (81 naming another carrier, 13 naming a literal).
+  The **Engineering `term-admission.schema.json` profile** constrains
+  `relations` property names to exactly those keys, and the native
+  `admitTermRecord` rejects an otherwise valid-looking undeclared predicate
+  before rendering. The Markdown reader uses the same authority, including
+  a caller's narrower authorized subset. Predicate range declarations are
+  carried into the original glossary-index and SKOS/JSON-LD projection; this
+  is **not** evidence that any cited target is resolved, source-authenticated
+  or independently verified. Extending the vocabulary requires an upstream
+  typed predicate and separate downstream receiving, never automatic
+  acceptance of an arbitrary frontmatter key.
 - **Visibility.**
   `visibility` is `public` or `authenticated` (the default when absent). Only `public` opens a term to anonymous surfaces such as the public vocabulary and the knowledge garden's public tree.
+
+**Unstated versus empty frontmatter.** The original upstream Markdown codec distinguishes no YAML envelope (no authored frontmatter) from an explicit YAML envelope that decodes to `null`. The former permits a filename/H1-derived default term name; the latter is refused as a non-object term source. No generic Markdown parser or Science concept rule is silently rewritten to turn explicit YAML null into a claim.
 
 ## Corpus cleanup
 

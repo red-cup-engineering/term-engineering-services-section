@@ -1,13 +1,15 @@
-import TERM_RECORD_SCHEMA from "./term.schema.json" with { type: "json" };
+import TERM_RECORD_SCHEMA from "./term-admission.schema.json" with { type: "json" };
+import TERM_SCIENCE_SCHEMA from "./term.schema.json" with { type: "json" };
+import RELATION_PREDICATE_VOCABULARY from "./relation-predicates.json" with { type: "json" };
 
-export { TERM_RECORD_SCHEMA };
+export { TERM_RECORD_SCHEMA, TERM_SCIENCE_SCHEMA };
 
 const IDENTITY = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 const DATE = /^\d{4}-\d{2}-\d{2}$/u;
 const NI = /^ni:\/\/\/sha-256;[A-Za-z0-9_-]{43}$/u;
 function nonempty(value, label) { if (typeof value !== "string" || value.trim() === "") throw new TypeError(`${label} must be nonempty text`); }
 
-/** Admit the exact executable projection of the term-science record contract. */
+/** Admit a strict Engineering refinement of the independent original Science term type. */
 export function admitTermRecord(value) {
   if (value === null || typeof value !== "object" || Array.isArray(value)) throw new TypeError("term record must be an object");
   const allowed = new Set(Object.keys(TERM_RECORD_SCHEMA.properties));
@@ -28,6 +30,7 @@ export function admitTermRecord(value) {
     if (value.relations === null || typeof value.relations !== "object" || Array.isArray(value.relations)) throw new TypeError("relations must be an object");
     for (const [predicate, assertion] of Object.entries(value.relations)) {
       if (!IDENTITY.test(predicate)) throw new TypeError(`invalid relation predicate ${predicate}`);
+      if (!Object.hasOwn(RELATION_PREDICATE_VOCABULARY, predicate)) throw new RangeError(`term relation predicate is not authorized: ${predicate}`);
       const assertions = Array.isArray(assertion) ? assertion : [assertion];
       if (assertions.length === 0 || new Set(assertions).size !== assertions.length) throw new TypeError(`relation ${predicate} must contain unique assertions`);
       for (const item of assertions) nonempty(item, `relation ${predicate}`);

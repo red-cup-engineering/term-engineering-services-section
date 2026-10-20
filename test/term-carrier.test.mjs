@@ -1,9 +1,76 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { migrateLegacyTermMarkdown, recognizeTermMarkdown, renderTermMarkdown } from "../src/term-carrier.mjs";
+import { TERM_KEYS, migrateLegacyTermMarkdown, recognizeTermDocument, recognizeTermMarkdown, renderTermMarkdown } from "../src/term-carrier.mjs";
+import { TERM_RECORD_SCHEMA, admitTermRecord } from "../schemas/glossary/term/term.schema.mjs";
+import RELATION_PREDICATE_VOCABULARY from "../schemas/glossary/term/relation-predicates.json" with { type: "json" };
 import { writeTerm } from "../src/term-operations.mjs";
 
 const body = "A model is a deliberately limited representation used to answer a stated class of questions about a system.";
+
+test("the Draft 2020-12 term schema and the actual Markdown reader enforce one closed typed resource vocabulary", () => {
+  assert.equal(TERM_RECORD_SCHEMA.$schema, "https://json-schema.org/draft/2020-12/schema");
+  assert.equal(TERM_RECORD_SCHEMA.additionalProperties, false,
+    "a schema exported to downstream consumers must refuse what the original term reader refuses");
+  assert.deepEqual(TERM_KEYS, Object.keys(TERM_RECORD_SCHEMA.properties),
+    "frontmatter admission derives its canonical field names from the upstream schematic resource");
+
+  const record = { identity: "model", name: "Model", body,
+    type: "scientific-model", creator: "Original Author",
+    provenance: { "date-created": "2026-10-20" },
+    relations: { "acts-on": "system" } };
+  assert.equal(admitTermRecord(record), record);
+  assert.throws(() => admitTermRecord({ ...record, inventedKey: "undocumented authority" }),
+    /term record does not admit inventedKey/);
+
+  const recognized = recognizeTermDocument({
+    filename: "model.md", body,
+    frontmatter: { name: "Model", type: "scientific-model",
+      creator: "Original Author", "date-created": "2026-10-20", "acts-on": "system" },
+  });
+  assert.equal(recognized.admitted, true, JSON.stringify(recognized.findings));
+  assert.deepEqual(recognized.relations, { "acts-on": "system" });
+  assert.equal(recognized.provenance["date-created"], "2026-10-20");
+  assert.equal(recognized.type, "scientific-model");
+  assert.equal(recognized.creator, "Original Author");
+
+  const unknown = recognizeTermDocument({
+    filename: "model.md", body,
+    frontmatter: { name: "Model", "opaque-thing": "not an admitted predicate" },
+  });
+  assert.equal(unknown.admitted, false);
+  assert.ok(unknown.findings.some(({ rule, message }) =>
+    rule === "unknown-key" && message.includes("opaque-thing")));
+});
+
+test("every term relation key must be in the original typed upstream predicate vocabulary", () => {
+  const predicateNames = Object.keys(RELATION_PREDICATE_VOCABULARY);
+  assert.equal(predicateNames.length, 94, "source-owned predicate vocabulary must be qualified before changing it");
+  assert.deepEqual(TERM_RECORD_SCHEMA.properties.relations.propertyNames.enum, predicateNames,
+    "the canonical Draft 2020-12 schema must admit precisely the original lexical relation keys");
+  assert.deepEqual(
+    Object.values(RELATION_PREDICATE_VOCABULARY).reduce((count, spec) =>
+      ({ ...count, [spec.range]: count[spec.range] + 1 }), { carrier: 0, literal: 0 }),
+    { carrier: 81, literal: 13 }, "predicate ranges remain distinct carrier/literal source declarations");
+
+  const base = { identity: "model", name: "Model", body };
+  for (const key of ["acts-on", "symbol"]) {
+    const candidate = { ...base, relations: { [key]: key === "acts-on" ? "system" : "λ" } };
+    assert.equal(admitTermRecord(candidate), candidate, "direct term-record admission accepts original predicates");
+    const text = renderTermMarkdown(candidate);
+    const received = recognizeTermMarkdown({ text, filename: "model.md" });
+    assert.equal(received.admitted, true, JSON.stringify(received.findings));
+    assert.equal(received.relations[key], candidate.relations[key]);
+  }
+
+  const unqualified = { ...base, relations: { "invented-predicate": "system" } };
+  assert.throws(() => admitTermRecord(unqualified),
+    /term relation predicate is not authorized: invented-predicate/u);
+  const source = renderTermMarkdown(base);
+  const withUndeclaredRelation = source.replace("name: Model", "name: Model\nrelations:\n  invented-predicate: system");
+  const refused = recognizeTermMarkdown({ text: withUndeclaredRelation, filename: "model.md" });
+  assert.equal(refused.admitted, false);
+  assert.ok(refused.findings.some(({ message }) => /invented-predicate/u.test(message)));
+});
 
 test("science record projects through Markdown with filename identity and first-class evidence", () => {
   const text = renderTermMarkdown({ identity: "model", name: "Model", aliases: ["representation"], keywords: ["system"], relations: { "acts-on": "system" }, references: { smith2024: { authors: ["A. Smith"], title: "Models", year: 2024, url: "https://example.com/models" } }, provenance: { "date-created": "2026-09-01", sources: ["smith2024"] }, body });
@@ -121,11 +188,22 @@ test("name defaults to the carrier's first H1 heading when the frontmatter state
   assert.equal(recognized.name, "Stellar Evolution");
 });
 
-test("name defaults to the identity with hyphens turned to spaces when the frontmatter states no name and the body carries no H1", () => {
-  const text = `---\n---\n${body}\n`;
+test("name defaults to the identity with hyphens turned to spaces when the original source carries no frontmatter or H1", () => {
+  const text = `${body}\n`;
   const recognized = recognizeTermMarkdown({ text, filename: "stellar-evolution.md" });
   assert.equal(recognized.admitted, true);
   assert.equal(recognized.name, "stellar evolution");
+});
+
+
+test("an explicit empty YAML fence is not silently laundered into an authored term record", () => {
+  const empty = recognizeTermMarkdown({ text: "---\n---\n" + body + "\n", filename: "stellar-evolution.md" });
+  assert.equal(empty.admitted, false);
+  assert.ok(empty.findings.some(({ rule }) => rule === "markdown"),
+    "an explicit YAML null is not an object-valued term record under the upstream Markdown codec");
+  const genuinelyAbsent = recognizeTermMarkdown({ text: body, filename: "stellar-evolution.md" });
+  assert.equal(genuinelyAbsent.admitted, true, JSON.stringify(genuinelyAbsent.findings));
+  assert.equal(genuinelyAbsent.name, "stellar evolution");
 });
 
 test("an explicit name still wins over a first H1 heading", () => {
@@ -168,6 +246,6 @@ test("write requires explicit filename identity and collision authority", async 
 });
 
 test("default term name uses canonical headings beyond fenced examples", () => {
-  const text = "---\n---\n~~~~md\n# Wrong Name\n~~~~\n\nReal Name\n=========\n\nA precise description of the term.\n";
+  const text = "~~~~md\n# Wrong Name\n~~~~\n\nReal Name\n=========\n\nA precise description of the term.\n";
   assert.equal(recognizeTermMarkdown({ text, filename: "fallback.md" }).name, "Real Name");
 });
