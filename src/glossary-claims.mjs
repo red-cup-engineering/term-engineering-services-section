@@ -12,7 +12,7 @@ import { querySignGraph } from "@red-cup-engineering/signgraph/semantic-graph";
 import { createSignClaim, joinClaimsKnowledge } from "@red-cup-engineering/signcell/semantic-claim";
 import { address, sectionReading } from "@red-cup-engineering/signcell/cell";
 import { referenceOf } from "@red-cup-engineering/signcell/typed-mark";
-import { glossaryConceptToken } from "./glossary-token.mjs";
+import { glossaryConceptToken, glossaryConceptType } from "./glossary-token.mjs";
 
 const reject = reason => { throw new TypeError("glossary claims: " + reason); };
 
@@ -25,18 +25,31 @@ const reject = reason => { throw new TypeError("glossary claims: " + reason); };
  * There is no second statement store and no cloned relation evaluator.
  */
 export function glossaryClaimsAt(foam, selector) {
+  const record = selector && typeof selector === "object" && !Array.isArray(selector);
+  const tokenMode = record && Object.hasOwn(selector, "token");
   if (!foam || foam.schema !== "computer-glossary-foam.v1" ||
       !["public", "authenticated"].includes(foam.audience) || !foam.foam ||
-      !selector || typeof selector !== "object" || Array.isArray(selector) ||
-      Reflect.ownKeys(selector).some(key => typeof key !== "string" ||
-        !["scheme", "identity", "predicate"].includes(key) ||
+      !record || Reflect.ownKeys(selector).some(key => typeof key !== "string" ||
+        !(tokenMode ? ["token", "predicate"] : ["scheme", "identity", "predicate"]).includes(key) ||
         !Object.hasOwn(Object.getOwnPropertyDescriptor(selector, key), "value")) ||
-      typeof selector.scheme !== "string" ||
-      typeof selector.identity !== "string" ||
+      (tokenMode
+        ? typeof selector.token !== "string" ||
+          !/^ni:\/\/\/sha-256;[A-Za-z0-9_-]{43}$/u.test(selector.token)
+        : typeof selector.scheme !== "string" || typeof selector.identity !== "string") ||
       (selector.predicate !== undefined &&
         (typeof selector.predicate !== "string" || !selector.predicate)))
-    reject("requires an admitted foam and exact scheme, identity, optional predicate");
-  const concept = referenceOf(glossaryConceptToken(selector.scheme, selector.identity));
+    reject("requires admitted foam and exactly one source concept: canonical NI token OR scheme/identity, optional predicate");
+  // A source-generated concept NI returned by the original lexical search
+  // must select an EXISTING typed mark from the supplied admitted SignGraph
+  // cut. It is not reinterpreted as text, forged from a guessed scheme or
+  // treated as a privacy/access token. Other typed cells may have valid NI
+  // identities but cannot serve as glossary concept subjects.
+  const selectedMark = tokenMode
+    ? foam.foam.cells.find(mark => mark.id === selector.token &&
+        mark.type === glossaryConceptType.id)
+    : glossaryConceptToken(selector.scheme, selector.identity);
+  if (!selectedMark) reject("concept token not present as a typed concept in this admitted source cut");
+  const concept = referenceOf(selectedMark);
   // A local cut can contain boundary-reference tokens from other schemes.
   // Seeing such a typed endpoint does not mean its definitions were included;
   // never mistake an unprojected neighbor for a claim with no testimony.
