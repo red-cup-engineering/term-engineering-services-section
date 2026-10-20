@@ -67,7 +67,8 @@ export function projectGlossaryFoam(index, { audience = "public", concept } = {}
   const nearest = createNearestSchemeResolver(permitted);
   const records = localToken === undefined ? permitted : permitted.filter(record => record.token === localToken);
   const accounting = { definitions: records.length, withheld: placed.length - permitted.length,
-    outsideLocalCut: permitted.length - records.length, relations: 0, resolvedRelations: 0,
+    ...(localToken === undefined ? {} : { outsideLocalCut: permitted.length - records.length }),
+    relations: 0, resolvedRelations: 0,
     unresolvedRelations: 0, unaddressableTargets: 0 };
   const wanted = new Map();
   const bySchemes = new Map();
