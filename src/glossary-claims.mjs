@@ -39,6 +39,12 @@ export function glossaryClaimsAt(foam, selector) {
       (selector.predicate !== undefined &&
         (typeof selector.predicate !== "string" || !selector.predicate)))
     reject("requires admitted foam and exactly one source concept: canonical NI token OR scheme/identity, optional predicate");
+  // A visible boundary reference on a local concept cut never grants the
+  // other concept's definition or even an exhaustive negative result.
+  // Refuse before testing membership to avoid revealing whether the
+  // unselected source has a currently readable typed mark.
+  if (tokenMode && foam.localConcept && foam.localConcept.token !== selector.token)
+    reject("concept outside the selected source cut; no absence claim is available");
   // A source-generated concept NI returned by the original lexical search
   // must select an EXISTING typed mark from the supplied admitted SignGraph
   // cut. It is not reinterpreted as text, forged from a guessed scheme or
