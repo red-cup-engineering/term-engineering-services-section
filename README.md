@@ -84,6 +84,12 @@ Schemes are named by `schemeIriPath`, so a concept's token and its SKOS IRI name
 
 `scripts/project-glossary-foam.mjs` (bin `project-glossary-foam`, `--root --index --out [--audience public|authenticated]`) indexes a root and writes both. Over the whole 561 Group the authenticated foam takes about 75 seconds and 850 MB, and is about 40 MB; it is derived on demand.
 
+## Native witnessed SignCell claim readings
+
+`./glossary-claims` exports `glossaryClaimsAt(foam, { scheme, identity, predicate? })`. It selects the exact typed concept's source edges from the existing SignGraph `querySignGraph` index and admits their native typed subject/predicate/object and authoring-definition witness through SignCell `createSignClaim`. Multiple definition witnesses of the *same* claim join with `joinClaimsKnowledge`, preserving canonical claim identity and each original source EAVT edge. Native SignCell `sectionReading` reports the separate FOUR evidence/presence readings. It does not infer a refutation from absence, treat a written definition as externally verified truth, or identify a glossary token with an Obsmetrologia-generated Kinematic point.
+
+The caller must supply an original source- and audience-admitted `projectGlossaryFoam` result. These pure readers **do not authenticate Actors or confer access rights**. Source owners must admit each Actor's index/foam and supply the currently permitted cut to CAIRN/MetroPlat; do not mount an authenticated aggregate directly as a public query surface. The source foam's semantic graph was incorrectly imported from `signcell/semantic-graph`; it is now imported from its real `signgraph/semantic-graph` owner, with an exact SignGraph source-candidate dependency. Dependency closure, release availability, installed Cold Red Gate reader and native test execution remain to be received and must not be inferred from source-only regression cases.
+
 ## SKOS vocabulary
 
 `src/glossary-skos.mjs` (the `./glossary-skos` export) projects a glossary index into a [W3C SKOS](https://www.w3.org/TR/skos-reference/) vocabulary serialized as JSON-LD (schema `computer-glossary-skos.v3`), so RDF, thesaurus, and schema.org consumers can all read the house glossaries.
