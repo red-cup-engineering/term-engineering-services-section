@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { glossaryClaimsAt } from "../src/glossary-claims.mjs";
 import { FOAM_PREDICATES, projectGlossaryFoam } from "../src/glossary-foam.mjs";
-import { projectGlossaryIndex } from "../src/glossary-index.mjs";
+import { createGlossaryIndexReader, projectGlossaryIndex } from "../src/glossary-index.mjs";
+import { glossaryAudienceAdmits } from "../src/glossary-skos.mjs";
 import { glossaryConceptToken, glossarySignToken } from "../src/glossary-token.mjs";
 import { renderTermMarkdown } from "../src/term-carrier.mjs";
 
@@ -68,4 +69,55 @@ test("querying a local foam refuses boundary-only concept references rather than
   assert.deepEqual(local.cells, whole.cells);
   assert.deepEqual(local.sources, whole.sources);
   assert.throws(() => glossaryClaimsAt(selected, { scheme: BETA, identity: "team" }), /outside the selected source cut/);
+});
+
+test("an authorized Mandarin lexical hit reaches that sense's original source-witnessed SignCell claims", () => {
+  // The original glossary producer performs scope admission; neither a
+  // lexical spelling nor a model-selected actor can grant source knowledge.
+  const term = (scheme, identity, name, aliases = [], visible = true) => ({
+    path: scheme + "/content/text/glossary/terms/" + identity + ".md",
+    filename: identity + ".md",
+    text: renderTermMarkdown({ identity, name, aliases, body,
+      ...(visible ? { visibility: "public" } : {}) }),
+  });
+  const index = projectGlossaryIndex({ root: "/glossary", documents: [
+    term(ALPHA, "language-space", "语言空间", ["L-Space", "語言空間"]),
+    term(BETA, "language-space", "语义空间"),
+    term(ALPHA, "private-lexeme", "秘密术语", [], false),
+  ] });
+  const visible = Object.freeze({
+    ...index, records: Object.freeze(index.records.filter(record =>
+      glossaryAudienceAdmits(record, "public"))),
+  });
+  const reader = createGlossaryIndexReader(visible);
+  const hits = reader.search("空间");
+  assert.equal(hits.length, 2);
+  assert.equal(new Set(hits.map(hit => hit.sign)).size, 1,
+    "both schemes use the same lexical SignCell sign, not one meaning");
+  assert.equal(new Set(hits.map(hit => hit.token)).size, 2,
+    "distinct source concept tokens retain their own definitions");
+  assert.deepEqual(reader.search("L-Space").map(hit => hit.scheme), [ALPHA],
+    "the English spelling belongs only to the explicitly authored alias");
+  assert.deepEqual(reader.search("秘密"), [], "public search cannot enumerate gated terms");
+  const chosen = hits.find(hit => hit.scheme === ALPHA);
+  assert.ok(chosen);
+  const local = projectGlossaryFoam(index, {
+    audience: "public", concept: { scheme: chosen.scheme, identity: chosen.identity },
+  });
+  const claim = glossaryClaimsAt(local, {
+    scheme: chosen.scheme, identity: chosen.identity, predicate: FOAM_PREDICATES.notation,
+  });
+  assert.equal(claim.concept.id, chosen.token);
+  assert.equal(claim.cells.length, 1);
+  assert.equal(claim.cells[0].subject.id, chosen.token);
+  assert.equal(claim.cells[0].object.id, glossarySignToken("language-space").id);
+  assert.equal(claim.cells[0].for.length, 1);
+  assert.deepEqual(claim.cells[0].against, []);
+  assert.equal(claim.sources[0].edges.length, 1);
+  assert.equal(claim.sourceStatementsOnly, true);
+  assert.equal(claim.knowledgeTruthEstablished, false);
+  assert.throws(() => glossaryClaimsAt(local, {
+    scheme: BETA, identity: chosen.identity,
+  }), /outside the selected source cut/,
+    "a neighbor's typed concept does not grant access to its definitions");
 });
