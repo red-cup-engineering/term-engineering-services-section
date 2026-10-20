@@ -22,7 +22,8 @@
     "./term.schema.json": "./schemas/glossary/term/term.schema.json",
     "./relation-predicates.json": "./schemas/glossary/term/relation-predicates.json",
     "./glossary-token": "./src/glossary-token.mjs",
-    "./glossary-foam": "./src/glossary-foam.mjs"
+    "./glossary-foam": "./src/glossary-foam.mjs",
+    "./term-admission.schema.json": "./schemas/glossary/term/term-admission.schema.json"
   },
   "bin": {
     "term": "apps/term-cli.mjs",
