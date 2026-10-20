@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -31,6 +32,18 @@ test("the real npm-packed term schema admits its original vocabulary in a separa
   const archive = files[0];
   assert.match(archive.filename, /\.tgz$/u);
   const entries = new Set(archive.files.map((file) => file.path));
+  // Retain *these exact packed bytes* for the downstream package receiver when CI
+  // supplies an output destination; the test still consumes this same archive.
+  const archivePath = join(scratch, archive.filename);
+  if (process.env.TERM_SCHEMA_PACK_OUTPUT_DIR) {
+    const out = resolve(process.env.TERM_SCHEMA_PACK_OUTPUT_DIR);
+    mkdirSync(out, { recursive: true });
+    const copy = join(out, archive.filename);
+    copyFileSync(archivePath, copy);
+    const digest = (path) => createHash("sha256").update(readFileSync(path)).digest("hex");
+    assert.equal(digest(copy), digest(archivePath), "retained candidate bytes must equal the tested package");
+  }
+
   for (const entry of [
     "schemas/glossary/term/term.schema.mjs",
     "schemas/glossary/term/term.schema.json",
