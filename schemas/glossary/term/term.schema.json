@@ -9,7 +9,7 @@
     "name",
     "body"
   ],
-  "additionalProperties": true,
+  "additionalProperties": false,
   "properties": {
     "identity": {
       "type": "string",
