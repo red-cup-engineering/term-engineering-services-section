@@ -31,6 +31,19 @@ The admission path (`recognizeTermMarkdown`, `admitTermMarkdown`, and the `*InVa
   An explicit `identity` must still equal the stem; a mismatch refuses admission.
 - **Assertions.**
   `type: intelligence` and `creator: Homo sapiens` are first-class term attributes. Recognized carrier metadata such as dates and tags becomes the typed `provenance` projection; authorized relation predicates such as `requires: [light]` become `relations`; declared FARS `params`/`ast`/`output` become `status-function`. An existing nested statement with conflicting content is a **refusal**, not a silent overwrite. An unknown field is not an arbitrary extension point or an automatically authorized predicate; it remains source-authored but unadmitted until the appropriate upstream type, vocabulary and consuming purpose are established. The read does not mutate the authored Markdown.
+- **Relationship predicates and types.**
+  The original `schemas/glossary/term/relation-predicates.json` declares 94
+  authorized predicate keys (81 naming another carrier, 13 naming a literal).
+  The canonical `term.schema.json` (Draft 2020-12) constrains
+  `relations` property names to exactly those keys, and its imported
+  `admitTermRecord` rejects an otherwise valid-looking undeclared predicate
+  before rendering. The Markdown reader uses the same authority, including
+  a caller's narrower authorized subset. Predicate range declarations are
+  carried into the original glossary-index and SKOS/JSON-LD projection; this
+  is **not** evidence that any cited target is resolved, source-authenticated
+  or independently verified. Extending the vocabulary requires an upstream
+  typed predicate and separate downstream receiving, never automatic
+  acceptance of an arbitrary frontmatter key.
 - **Visibility.**
   `visibility` is `public` or `authenticated` (the default when absent). Only `public` opens a term to anonymous surfaces such as the public vocabulary and the knowledge garden's public tree.
 
