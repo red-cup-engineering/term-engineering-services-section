@@ -188,11 +188,22 @@ test("name defaults to the carrier's first H1 heading when the frontmatter state
   assert.equal(recognized.name, "Stellar Evolution");
 });
 
-test("name defaults to the identity with hyphens turned to spaces when the frontmatter states no name and the body carries no H1", () => {
-  const text = `---\n---\n${body}\n`;
+test("name defaults to the identity with hyphens turned to spaces when the original source carries no frontmatter or H1", () => {
+  const text = `${body}\n`;
   const recognized = recognizeTermMarkdown({ text, filename: "stellar-evolution.md" });
   assert.equal(recognized.admitted, true);
   assert.equal(recognized.name, "stellar evolution");
+});
+
+
+test("an explicit empty YAML fence is not silently laundered into an authored term record", () => {
+  const empty = recognizeTermMarkdown({ text: "---\\n---\\n" + body + "\\n", filename: "stellar-evolution.md" });
+  assert.equal(empty.admitted, false);
+  assert.ok(empty.findings.some(({ rule }) => rule === "markdown"),
+    "an explicit YAML null is not an object-valued term record under the upstream Markdown codec");
+  const genuinelyAbsent = recognizeTermMarkdown({ text: body, filename: "stellar-evolution.md" });
+  assert.equal(genuinelyAbsent.admitted, true, JSON.stringify(genuinelyAbsent.findings));
+  assert.equal(genuinelyAbsent.name, "stellar evolution");
 });
 
 test("an explicit name still wins over a first H1 heading", () => {
@@ -235,6 +246,6 @@ test("write requires explicit filename identity and collision authority", async 
 });
 
 test("default term name uses canonical headings beyond fenced examples", () => {
-  const text = "---\n---\n~~~~md\n# Wrong Name\n~~~~\n\nReal Name\n=========\n\nA precise description of the term.\n";
+  const text = "~~~~md\n# Wrong Name\n~~~~\n\nReal Name\n=========\n\nA precise description of the term.\n";
   assert.equal(recognizeTermMarkdown({ text, filename: "fallback.md" }).name, "Real Name");
 });
