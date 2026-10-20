@@ -322,13 +322,28 @@ export function createGlossaryIndexReader(index) {
   }
 
   /**
-   * Human lexical search with machine-readable identity for each hit.
-   * A hit is a source reading of a scheme and facet, not an assertion
-   * of truth or an equivalence between same-spelled concepts.
+   * Native SignCell concept NI coordinates are EXACT identity questions,
+   * never words to segment, rank, or accidentally match other records.
+   * Human language text follows original bounded lexical search instead.
+   * Both paths read only this ALREADY admitted source cut; neither one
+   * grants a new audience, Actor standing or domain truth.
    */
   function search(query, { limit } = {}) {
     if (typeof query !== "string" || query.trim() === "") throw new TypeError("query must be nonempty text");
     const effectiveLimit = resolveSearchLimit(limit);
+    const requested = query.trim();
+    if (requested.startsWith("ni:")) {
+      if (!TOKEN_ID.test(requested))
+        throw new TypeError("glossary search needs an exact canonical SignCell concept token, not a malformed NI word query");
+      const hits = (byToken.get(requested) ?? []).map(record => Object.freeze({
+        identity: record.identity,
+        sign: signOf(record.identity), token: record.token,
+        scheme: record.scheme, facet: record.facet,
+        name: record.name, description: record.description,
+        section: record.section, score: SEARCH_WEIGHTS.nameExact,
+      }));
+      return Object.freeze(hits.slice(0, effectiveLimit));
+    }
     const queryTokens = segmentSearchWords(query);
     const candidates = new Set();
     for (const token of queryTokens)
