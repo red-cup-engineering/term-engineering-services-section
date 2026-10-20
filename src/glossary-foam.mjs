@@ -22,6 +22,7 @@ const OBJECT_TYPES = Object.freeze({
 /** Every cut declares a predicate identically, so cuts glue without obstruction. */
 const relationOf = (predicate) => Object.freeze({ id: predicate, subjectTypes: [glossaryConceptType.id], objectTypes: OBJECT_TYPES[predicate] ?? TARGET_TYPES, witnessTypes: [glossaryDefinitionType.id] });
 const list = (value) => (Array.isArray(value) ? value : [value]);
+const freezeLocalConcept = (concept, token) => Object.freeze({ scheme: concept.scheme, identity: concept.identity, token });
 
 function ok(result, what) {
   if (!result.ok) throw new Error(`${what} refused: ${result.refusal.code}: ${result.refusal.message}`);
@@ -43,15 +44,31 @@ function ok(result, what) {
  * scheme (a term and a topic of one identity, say) keeps both definitions and is reported.
  * Pure and deterministic: the same index yields byte-identical output.
  * @param {{records: readonly object[]}} index
- * @param {{audience?: "public"|"authenticated"}} [options]
+ * @param {{audience?: "public"|"authenticated", concept?: {scheme: string, identity: string}}} [options]
+ *   Exact local concept queries project only that concept's original definition cuts;
+ *   they keep the global audience-admitted nearest-scheme resolver, but neither
+ *   discover nor authorize otherwise inaccessible source knowledge.
  */
-export function projectGlossaryFoam(index, { audience = "public" } = {}) {
+export function projectGlossaryFoam(index, { audience = "public", concept } = {}) {
   if (!index || !Array.isArray(index.records)) throw new TypeError("index must be a projected glossary index");
   if (!GLOSSARY_AUDIENCES.includes(audience)) throw new TypeError(`audience must be one of ${GLOSSARY_AUDIENCES.join(", ")}`);
+  if (concept !== undefined && (concept === null || typeof concept !== "object" || Array.isArray(concept) ||
+      Reflect.ownKeys(concept).length !== 2 ||
+      !["scheme", "identity"].every(key => Object.hasOwn(concept, key) &&
+        Object.hasOwn(Object.getOwnPropertyDescriptor(concept, key), "value")) ||
+      typeof concept.scheme !== "string" || typeof concept.identity !== "string"))
+    throw new TypeError("glossary foam local cut requires an exact scheme-qualified concept");
   const placed = index.records.filter((record) => typeof record.scheme === "string");
-  const records = placed.filter((record) => glossaryAudienceAdmits(record, audience));
-  const nearest = createNearestSchemeResolver(records);
-  const accounting = { definitions: records.length, withheld: placed.length - records.length, relations: 0, resolvedRelations: 0, unresolvedRelations: 0, unaddressableTargets: 0 };
+  const permitted = placed.filter((record) => glossaryAudienceAdmits(record, audience));
+  const localToken = concept === undefined ? undefined : glossaryConceptToken(concept.scheme, concept.identity).id;
+  // Source admission and lexical/scheme resolution happen against the entire
+  // already-permitted family. Only the local body and its witnessed edges are
+  // subsequently projected; external endpoint tokens are boundary references.
+  const nearest = createNearestSchemeResolver(permitted);
+  const records = localToken === undefined ? permitted : permitted.filter(record => record.token === localToken);
+  const accounting = { definitions: records.length, withheld: placed.length - permitted.length,
+    outsideLocalCut: permitted.length - records.length, relations: 0, resolvedRelations: 0,
+    unresolvedRelations: 0, unaddressableTargets: 0 };
   const wanted = new Map();
   const bySchemes = new Map();
   for (const record of records) bySchemes.set(record.scheme, [...(bySchemes.get(record.scheme) ?? []), record]);
@@ -102,11 +119,12 @@ export function projectGlossaryFoam(index, { audience = "public" } = {}) {
     code: "concept-defined-more-than-once", concept: group[0].token, scheme: schemeIriPath(group[0].scheme), identity: group[0].identity,
     facets: Object.freeze(group.map((record) => record.facet).sort()),
   })).sort((left, right) => left.scheme.localeCompare(right.scheme) || left.identity.localeCompare(right.identity));
-  const definedSigns = new Set(records.map((record) => record.identity));
+  const definedSigns = new Set(permitted.map((record) => record.identity));
   const kinds = (type) => glued.graph.cells.filter((each) => each.type === type).length;
   return Object.freeze({
     schema: SCHEMA,
     audience,
+    ...(localToken === undefined ? {} : { localConcept: freezeLocalConcept(concept, localToken) }),
     foam: glued.graph,
     cuts: Object.freeze(cuts.map(({ scheme, graph }) => Object.freeze({ scheme: schemeIriPath(scheme), id: graph.id, cells: graph.cells.length, edges: graph.edges.length }))),
     obstructions: glued.obstructions,
