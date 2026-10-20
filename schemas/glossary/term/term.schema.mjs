@@ -1,4 +1,5 @@
 import TERM_RECORD_SCHEMA from "./term.schema.json" with { type: "json" };
+import RELATION_PREDICATE_VOCABULARY from "./relation-predicates.json" with { type: "json" };
 
 export { TERM_RECORD_SCHEMA };
 
@@ -28,6 +29,7 @@ export function admitTermRecord(value) {
     if (value.relations === null || typeof value.relations !== "object" || Array.isArray(value.relations)) throw new TypeError("relations must be an object");
     for (const [predicate, assertion] of Object.entries(value.relations)) {
       if (!IDENTITY.test(predicate)) throw new TypeError(`invalid relation predicate ${predicate}`);
+      if (!Object.hasOwn(RELATION_PREDICATE_VOCABULARY, predicate)) throw new RangeError(`term relation predicate is not authorized: ${predicate}`);
       const assertions = Array.isArray(assertion) ? assertion : [assertion];
       if (assertions.length === 0 || new Set(assertions).size !== assertions.length) throw new TypeError(`relation ${predicate} must contain unique assertions`);
       for (const item of assertions) nonempty(item, `relation ${predicate}`);
