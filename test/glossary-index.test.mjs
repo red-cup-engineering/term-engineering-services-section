@@ -216,6 +216,6 @@ test("UAX29 lexical lookup recovers multilingual labels while SignCell scheme-sp
     "traditional Han remains an explicitly authored alias, never an inferred equivalence");
   assert.deepEqual(reader.search("因果集").map(hit => hit.scheme), [alpha],
     "the source keyword must be segmented by the same Unicode provider as queries");
-  assert.throws(() => reader.resolve("language-space"), /ambiguous glossary sign\\/concept/,
+  assert.throws(() => reader.resolve("language-space"), /ambiguous glossary sign\/concept/,
     "a lexical query must not elect one meaning across two source schemes");
 });
