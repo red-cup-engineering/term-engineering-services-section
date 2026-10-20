@@ -32,4 +32,15 @@ jobs:
           node --check schemas/glossary/term/term.schema.mjs
           node --check test/term-schema-package-receiving.test.mjs
       - name: Pack source and receive the exact artifact in a separate Node consumer
-        run: node --test test/term-schema-package-receiving.test.mjs
+        run: |
+          mkdir -p dist
+          TERM_SCHEMA_PACK_OUTPUT_DIR="$GITHUB_WORKSPACE/dist" node --test test/term-schema-package-receiving.test.mjs
+          test "$(find dist -maxdepth 1 -name '*.tgz' | wc -l)" = 1
+          sha256sum dist/*.tgz
+      - name: Retain exact tested candidate for independent downstream receiving
+        uses: actions/upload-artifact@v4
+        with:
+          name: term-schema-candidate-${{ github.sha }}
+          path: dist/*.tgz
+          if-no-files-found: error
+          retention-days: 30
