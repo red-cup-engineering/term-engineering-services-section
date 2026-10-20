@@ -18,6 +18,8 @@ test("the real npm-packed term schema admits its original vocabulary in a separa
   const sourceManifest = JSON.parse(readFileSync(join(SOURCE_ROOT, "package.json"), "utf8"));
   assert.equal(sourceManifest.name, PACKAGE_NAME);
   assert.equal(sourceManifest.exports["./term-schema"], "./schemas/glossary/term/term.schema.mjs");
+  assert.equal(sourceManifest.exports["./term.schema.json"], "./schemas/glossary/term/term.schema.json");
+  assert.equal(sourceManifest.exports["./term-admission.schema.json"], "./schemas/glossary/term/term-admission.schema.json");
   assert.equal(sourceManifest.exports["./relation-predicates.json"], "./schemas/glossary/term/relation-predicates.json");
 
   // npm pack is local-only: do not install unresolved private transitive dependencies,
@@ -47,6 +49,7 @@ test("the real npm-packed term schema admits its original vocabulary in a separa
   for (const entry of [
     "schemas/glossary/term/term.schema.mjs",
     "schemas/glossary/term/term.schema.json",
+    "schemas/glossary/term/term-admission.schema.json",
     "schemas/glossary/term/relation-predicates.json",
   ]) assert.ok(entries.has(entry), "the actual package must ship " + entry);
 
@@ -65,9 +68,16 @@ test("the real npm-packed term schema admits its original vocabulary in a separa
   const program = String.raw`
     import assert from "node:assert/strict";
     import { TERM_RECORD_SCHEMA, admitTermRecord } from "@red-cup-engineering/term-engineering-services-section/term-schema";
+    import scienceSchema from "@red-cup-engineering/term-engineering-services-section/term.schema.json" with { type: "json" };
+    import engineeringProfile from "@red-cup-engineering/term-engineering-services-section/term-admission.schema.json" with { type: "json" };
     import vocabulary from "@red-cup-engineering/term-engineering-services-section/relation-predicates.json" with { type: "json" };
     const keys = Object.keys(vocabulary);
     assert.equal(TERM_RECORD_SCHEMA.$schema, "https://json-schema.org/draft/2020-12/schema");
+    assert.equal(scienceSchema.$id, "glossary/terms/term");
+    assert.equal(scienceSchema.additionalProperties, true);
+    assert.equal(engineeringProfile.$id, "https://561.group/ns/term-engineering/admitted-term/v1");
+    assert.notEqual(scienceSchema.$id, engineeringProfile.$id);
+    assert.deepEqual(TERM_RECORD_SCHEMA, engineeringProfile);
     assert.equal(TERM_RECORD_SCHEMA.additionalProperties, false);
     assert.deepEqual(TERM_RECORD_SCHEMA.properties.relations.propertyNames.enum, keys);
     assert.equal(keys.length, 94);
