@@ -82,6 +82,9 @@ Schemes are named by `schemeIriPath`, so a concept's token and its SKOS IRI name
 - **Diagnostics.** A concept filed twice in one section (a term and a topic of one identity) keeps both definitions and is reported.
 - **Audience.** As in the SKOS projection.
 
+For an interactive language-space view, the **same** `projectGlossaryFoam(index, { audience, concept: { scheme, identity } })` producer accepts one exact local concept and projects only its original definition cuts (including multiple definition facets). Nearest-scheme resolution still uses all records admitted for the supplied audience, so cross-scheme targets remain typed boundary references; the producer does not invent their definitions. The returned `localConcept` records the cut and `accounting.outsideLocalCut` records definitions not selected. A `glossaryClaimsAt` query against that local foam rejects a different concept even if its token appears as a boundary reference: an unprojected definition must not be misrepresented as an unknown claim. Supplying an already authorized Actor-specific input corpus remains the *host* responsibility; choosing `concept` or `audience` alone is not a knowledge grant.
+
+The no-`concept` form retains the original full foam shape and accounting, for complete vocabulary publication. Local cuts reduce graph materialization for one concept, **not** the cost of acquiring and admitting the upstream glossary index; an installed World or CAIRN adapter must also provide incremental, actor-local source reads and revisions for true real-time experience.
 `scripts/project-glossary-foam.mjs` (bin `project-glossary-foam`, `--root --index --out [--audience public|authenticated]`) indexes a root and writes both. Over the whole 561 Group the authenticated foam takes about 75 seconds and 850 MB, and is about 40 MB; it is derived on demand.
 
 ## Native witnessed SignCell claim readings
