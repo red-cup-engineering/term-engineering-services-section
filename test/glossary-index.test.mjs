@@ -207,13 +207,15 @@ test("UAX29 lexical lookup recovers multilingual labels while SignCell scheme-sp
   assert.equal(hits.length, 2, "both authored Chinese names contain a lexical 空间 segment");
   assert.notEqual(hits[0].token, hits[1].token, "same filename sign does not identify different senses");
   assert.equal(hits[0].sign, hits[1].sign, "same spelled carrier remains one SignCell lexical sign");
-  assert.deepEqual(reader.search("语言空间").map(hit => hit.scheme), [alpha],
-    "an authored name has a stronger exact lexical reading");
+  const exact = reader.search("语言空间");
+  assert.equal(exact[0].scheme, alpha, "authored whole-name match outranks shared partial words");
+  assert.equal(exact[0].score > exact.at(-1).score, true);
   assert.deepEqual(reader.search("L-Space").map(hit => hit.scheme), [alpha],
     "only the originally authored alias connects English to this concept");
   assert.deepEqual(reader.search("語言空間").map(hit => hit.scheme), [alpha],
     "traditional Han remains an explicitly authored alias, never an inferred equivalence");
   assert.deepEqual(reader.search("因果集").map(hit => hit.scheme), [alpha],
     "the source keyword must be segmented by the same Unicode provider as queries");
-  assert.equal(reader.resolve("language-space") === undefined, false);
+  assert.throws(() => reader.resolve("language-space"), /ambiguous glossary sign\\/concept/,
+    "a lexical query must not elect one meaning across two source schemes");
 });
