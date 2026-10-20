@@ -241,3 +241,35 @@ test("repeated Unicode lexical queries reuse the admitted cut without losing nam
   assert.deepEqual(reader.search("unattestedterm"), [],
     "an absent word is neither a synonym nor negative SignCell testimony");
 });
+
+test("native SignCell NI search is exact and never falls through to lexical word scoring", () => {
+  const scheme = "services/alpha-services-section";
+  const otherScheme = "services/beta-services-section";
+  const carrier = (owner, facet, name) => ({
+    path: owner + "/content/text/glossary/" + facet + "/language-space.md",
+    filename: "language-space.md",
+    text: renderTermMarkdown({ identity: "language-space", name, body: operationBody }),
+  });
+  const reader = createGlossaryIndexReader(projectGlossaryIndex({
+    root: "/glossary", documents: [
+      carrier(scheme, "terms", "语言空间"),
+      carrier(scheme, "topics", "Language space"),
+      carrier(otherScheme, "terms", "Semantic space"),
+    ],
+  }));
+  const token = glossaryConceptToken(scheme, "language-space").id;
+  const other = glossaryConceptToken(otherScheme, "language-space").id;
+  const direct = reader.search(token);
+  assert.equal(direct.length, 2, "one original concept can have two definition facets");
+  assert.deepEqual(direct.map(hit => hit.facet).sort(), ["term", "topic"]);
+  assert.ok(direct.every(hit => hit.token === token && hit.scheme === scheme));
+  assert.notEqual(token, other, "different schemes are distinct concept tokens");
+  assert.deepEqual(reader.search(other).map(hit => hit.scheme), [otherScheme]);
+  assert.equal(reader.search(token, { limit: 1 }).length, 1);
+  assert.deepEqual(reader.search("ni:///sha-256;" + "Z".repeat(43)), [],
+    "an unknown but structurally valid token adds no denied or invented source");
+  assert.throws(() => reader.search("ni:///sha-256;broken"), /exact canonical SignCell concept token/);
+  assert.throws(() => reader.search("ni:semantic-space"), /exact canonical SignCell concept token/);
+  assert.deepEqual(reader.search("中文不存在词"), [],
+    "a source-absent human lexical string is not a negative epistemic claim");
+});
