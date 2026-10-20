@@ -219,3 +219,25 @@ test("UAX29 lexical lookup recovers multilingual labels while SignCell scheme-sp
   assert.throws(() => reader.resolve("language-space"), /ambiguous glossary sign\/concept/,
     "a lexical query must not elect one meaning across two source schemes");
 });
+
+test("repeated Unicode lexical queries reuse the admitted cut without losing name, alias or description facets", () => {
+  const source = fixtureDocuments();
+  const alpha = "services/alpha-services-section";
+  source.push({
+    path: alpha + "/content/text/glossary/terms/causal-sets.md",
+    filename: "causal-sets.md",
+    text: renderTermMarkdown({ identity: "causal-sets", name: "因果集",
+      aliases: ["Causal Sets"], keywords: ["kinematic space"],
+      description: "Causal order of witnessed events", body: operationBody }),
+  });
+  const reader = createGlossaryIndexReader(projectGlossaryIndex({ root: "/glossary", documents: source }));
+  for (const query of ["因果集", "因果", "Causal", "kinematic", "witnessed", "operation"]) {
+    const first = reader.search(query);
+    assert.deepEqual(reader.search(query), first, "repeated bound-reader results preserve the source cut");
+    assert.ok(first.length > 0, "every authored lexical field remains findable: " + query);
+  }
+  assert.deepEqual(reader.search("causal").filter(hit => hit.identity === "causal-sets")
+    .map(hit => hit.scheme), [alpha]);
+  assert.deepEqual(reader.search("unattestedterm"), [],
+    "an absent word is neither a synonym nor negative SignCell testimony");
+});
