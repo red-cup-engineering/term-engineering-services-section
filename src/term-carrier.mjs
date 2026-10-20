@@ -3,11 +3,12 @@ import { basename, extname as projectFilepathExtension } from "node:path";
 import { createMarkdownDocument } from "@red-cup-engineering/markdown-engineering-services-section/create-markdown-document";
 import { readMarkdownFrontmatter } from "@red-cup-engineering/read-markdown-frontmatter-service";
 import RELATION_PREDICATE_VOCABULARY from "../schemas/glossary/term/relation-predicates.json" with { type: "json" };
-import { admitTermRecord } from "../schemas/glossary/term/term.schema.mjs";
+import { TERM_RECORD_SCHEMA, admitTermRecord } from "../schemas/glossary/term/term.schema.mjs";
 import { slugify } from "@red-cup-engineering/computer-text-content-engineering-services-section/slugify-text";
 
 export const FORBIDDEN_TERM_KEYS = Object.freeze(["slug", "defines", "related", "title", "orchestrated-by"]);
-export const TERM_KEYS = Object.freeze(["identity", "name", "body", "description", "consent-status", "visibility", "type", "creator", "aliases", "keywords", "relations", "references", "provenance", "status-function"]);
+/** The canonical Draft 2020-12 term type owns the exact admitted field vocabulary. */
+export const TERM_KEYS = Object.freeze(Object.keys(TERM_RECORD_SCHEMA.properties));
 /** Carrier bookkeeping keys a term frontmatter may state at top level; the admission path folds them into `provenance` rather than refusing them as unknown or admitting them as relations. `type` is excluded: it is its own first-class TERM_KEYS entry now, not carrier bookkeeping. */
 export const CARRIER_METADATA_KEYS = Object.freeze(["date-created", "date-modified", "date-updated", "authors", "tags", "status", "id", "domain", "scheme"]);
 /** FARS status-function declaration keys (2026-04-08 note on FARS algebraic readings of work terms) a term frontmatter may state at top level; the admission path folds them into `status-function` rather than refusing them as unknown, admitting them as relations, or dropping them. */
