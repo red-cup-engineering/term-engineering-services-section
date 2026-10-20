@@ -37,6 +37,11 @@ export function glossaryClaimsAt(foam, selector) {
         (typeof selector.predicate !== "string" || !selector.predicate)))
     reject("requires an admitted foam and exact scheme, identity, optional predicate");
   const concept = referenceOf(glossaryConceptToken(selector.scheme, selector.identity));
+  // A local cut can contain boundary-reference tokens from other schemes.
+  // Seeing such a typed endpoint does not mean its definitions were included;
+  // never mistake an unprojected neighbor for a claim with no testimony.
+  if (foam.localConcept && foam.localConcept.token !== concept.id)
+    reject("concept outside the selected source cut; no absence claim is available");
   // The SignGraph original indexed reader owns the typed-membership and
   // predicate selection: a missing/foreign concept refuses, not empty truth.
   const edges = querySignGraph(foam.foam, concept,
