@@ -80,3 +80,33 @@ test("the authenticated foam carries every admitted carrier, and an unknown audi
   assert.equal(projectGlossaryFoam(index(), { audience: "authenticated" }).accounting.definitions, 5);
   assert.throws(() => projectGlossaryFoam(index(), { audience: "everyone" }), TypeError);
 });
+
+
+test("exact local concept projection carries original witnessed edges without building unrelated source cuts", () => {
+  const full = projectGlossaryFoam(index());
+  const local = projectGlossaryFoam(index(), { concept: { scheme: ALPHA, identity: "team" } });
+  const token = glossaryConceptToken(ALPHA, "team").id;
+  assert.equal(local.audience, "public");
+  assert.deepEqual(local.localConcept, { scheme: ALPHA, identity: "team", token });
+  assert.equal(local.accounting.definitions, 1);
+  assert.equal(local.accounting.outsideLocalCut, full.accounting.definitions - 1);
+  assert.equal(Object.hasOwn(full.accounting, "outsideLocalCut"), false);
+  assert.equal(local.cuts.length, 1);
+  assert.ok(local.foam.cells.length < full.foam.cells.length);
+  assert.deepEqual(local.obstructions, []);
+  const edges = graph => graph.foam.edges.filter(({ edge }) => edge.subject.id === token).map(({ edge }) => edge);
+  assert.deepEqual(edges(local), edges(full), "local cut keeps every original witnessed relation from the selected concept");
+  const related = edges(local).filter(edge => edge.predicate.endsWith("composed-of"));
+  assert.equal(related.length, 2);
+  assert.ok(related.every(edge => edge.object.id === glossaryConceptToken(ALPHA, "role").id ||
+    edge.object.id === glossarySignToken("character").id));
+});
+
+test("a local cut cannot create hidden or nonexistent concepts from public input", () => {
+  const scoped = projectGlossaryFoam(index(), { concept: { scheme: BETA, identity: "hidden" } });
+  assert.equal(scoped.accounting.definitions, 0);
+  assert.equal(scoped.foam.cells.length, 0);
+  assert.deepEqual(scoped.obstructions, []);
+  assert.throws(() => projectGlossaryFoam(index(), { concept: { scheme: ALPHA, identity: "team", actor: "forged" } }),
+    /exact scheme-qualified concept/);
+});
