@@ -1,5 +1,5 @@
 import { RELATION_PREDICATE_RANGES, recognizeTermMarkdown } from "./term-carrier.mjs";
-import { glossaryConceptId } from "./glossary-token.mjs";
+import { glossaryConceptId, glossarySignToken } from "./glossary-token.mjs";
 import { confinePath } from "@red-cup-engineering/computer-filepath-engineering-services-section/filepath";
 import { walkPosixPathsSync } from "@red-cup-engineering/computer-filepath-engineering-services-section/walk-posix-paths";
 const EXCLUDED_DIRECTORY_NAMES = ["legacy", "triage", "node_modules", "dist", "test", "fixtures"];
@@ -179,61 +179,119 @@ function resolveSearchLimit(limit) {
   return Math.min(limit, MAX_SEARCH_LIMIT);
 }
 
+/** A typed SignCell concept token, distinct from the lexical sign it uses. */
+const TOKEN_ID = /^ni:\/\/\/sha-256;[A-Za-z0-9_-]{43}$/u;
+const SCHEME = /^(?:[a-z0-9][a-z0-9-]*)(?:\/[a-z0-9][a-z0-9-]*)*$/u;
+
 /**
- * Bind a read-only reader over one projected glossary index: identity resolution, a relation
- * neighborhood over carrier-range predicates only, and a scored keyword search. Pure and
- * synchronous, so it runs equally in a Node script or a fetch-handler (edge) isolate.
- * @param {ReturnType<typeof projectGlossaryIndex>} index
- * @returns {Readonly<{resolve: Function, neighborhood: Function, search: Function}>}
+ * Normalize a concept question. An unqualified string is a sign (a word) or
+ * an exact source-generated SignCell concept token, NEVER a guessed concept.
+ * Same-sign/different-scheme polysemy and same-concept/multiple definitions
+ * are actual readings of language space, not map-key collisions.
+ */
+function glossarySelector(selector) {
+  if (typeof selector === "string") {
+    if (IDENTITY.test(selector)) return Object.freeze({ identity: selector });
+    if (TOKEN_ID.test(selector)) return Object.freeze({ token: selector });
+    throw new TypeError("glossary selector requires a sign identity or exact SignCell concept token");
+  }
+  if (!selector || typeof selector !== "object" || Array.isArray(selector) ||
+      Object.keys(selector).some(key => !["token", "identity", "scheme", "facet"].includes(key)) ||
+      (selector.token === undefined) === (selector.identity === undefined) ||
+      (selector.token !== undefined && (!TOKEN_ID.test(selector.token) || selector.scheme !== undefined)) ||
+      (selector.identity !== undefined && !IDENTITY.test(selector.identity)) ||
+      (selector.scheme !== undefined && (typeof selector.scheme !== "string" ||
+        (selector.scheme !== "" && !SCHEME.test(selector.scheme)))) ||
+      (selector.facet !== undefined && !Object.values(GLOSSARY_FACETS).includes(selector.facet)))
+    throw new TypeError("glossary selector needs one token OR identity, with optional owning scheme/facet");
+  return Object.freeze({ ...selector });
+}
+
+/**
+ * Bind the original glossary index, preserving typed SignCell concept IDs,
+ * scheme-scoped senses and definition facets. This is a pure reading of an
+ * ALREADY ADMITTED index, not an actor grant or a public-surface permission.
+ * Bind authorized index suppliers upstream; use the same nearest-scheme
+ * resolver as the native SKOS and SignGraph foam projectors.
+ *
+ * A sign can have many readings. readings(selector) gives all of them;
+ * resolve(selector) gives one only when uniquely determined, otherwise
+ * refuses. Do not overwrite senses under an opaque last-wins word key.
  */
 export function createGlossaryIndexReader(index) {
-  if (!index || typeof index !== "object" || !Array.isArray(index.records)) throw new TypeError("index must be a projected glossary index");
-  const byIdentity = new Map(index.records.map((record) => [record.identity, record]));
+  if (!index || typeof index !== "object" || !Array.isArray(index.records))
+    throw new TypeError("index must be a projected glossary index");
+  const byIdentity = new Map(), byToken = new Map();
+  for (const record of index.records) {
+    if (!IDENTITY.test(record.identity) || !TOKEN_ID.test(record.token) ||
+        typeof record.scheme !== "string" ||
+        record.token !== glossaryConceptId(record.scheme, record.identity))
+      throw new TypeError("glossary reading requires native scheme-qualified SignCell concept tokens");
+    byIdentity.set(record.identity, [...(byIdentity.get(record.identity) ?? []), record]);
+    byToken.set(record.token, [...(byToken.get(record.token) ?? []), record]);
+  }
+  const nearest = createNearestSchemeResolver(index.records);
 
-  /**
-   * The record admitted under `identity`, or undefined when none is indexed.
-   * @param {string} identity
-   * @returns {Readonly<object>|undefined}
-   */
-  function resolve(identity) {
-    if (typeof identity !== "string" || !IDENTITY.test(identity)) throw new TypeError("identity must be a kebab-case carrier identity");
-    return byIdentity.get(identity);
+  /** Recover all original definition readings, never quietly choosing a scheme or facet. */
+  function readings(selector) {
+    const question = glossarySelector(selector);
+    const group = question.token === undefined
+      ? byIdentity.get(question.identity) ?? [] : byToken.get(question.token) ?? [];
+    return Object.freeze(group.filter(record =>
+      (question.scheme === undefined || record.scheme === question.scheme) &&
+      (question.facet === undefined || record.facet === question.facet)));
+  }
+
+  /** One sense and definition, only when actually disambiguated by its selector. */
+  function resolve(selector) {
+    const found = readings(selector);
+    if (found.length > 1)
+      throw new TypeError("ambiguous glossary sign/concept: choose the owning scheme, concept token and, if needed, definition facet; use readings for all senses");
+    return found[0];
   }
 
   /**
-   * The relation neighborhood of `identity`: its record (if indexed), its outgoing carrier-range
-   * relations (with the target's own record when that identity is indexed), and every other
-   * indexed record's carrier-range relation naming `identity` (incoming).
-   * @param {string} identity
-   * @returns {Readonly<{record: object|undefined, outgoing: readonly object[], incoming: readonly object[]}>}
+   * Native neighborhood: carrier assertions resolve relative to their actual
+   * source scheme. Incoming means 'resolves to THIS concept token', not
+   * merely 'spells the same lexical sign in another section'.
+   * An unresolved target retains its SignCell sign token and its source
+   * record; it never becomes a claimed concept or a negative fact.
    */
-  function neighborhood(identity) {
-    const record = resolve(identity);
-    const outgoing = [];
-    if (record) {
-      for (const [predicate, assertion] of carrierRelationEntries(record)) {
-        for (const target of Array.isArray(assertion) ? assertion : [assertion]) {
-          const targetRecord = byIdentity.get(target);
-          outgoing.push(Object.freeze({ predicate, target, ...(targetRecord ? { record: targetRecord } : {}) }));
-        }
+  function neighborhood(selector) {
+    const record = resolve(selector);
+    const outgoing = [], incoming = [];
+    if (!record) return Object.freeze({
+      record: undefined, outgoing: Object.freeze([]), incoming: Object.freeze([]),
+    });
+    for (const [predicate, assertion] of carrierRelationEntries(record)) {
+      for (const target of Array.isArray(assertion) ? assertion : [assertion]) {
+        const targetRecord = nearest(record, target);
+        outgoing.push(Object.freeze({
+          predicate, target,
+          targetSign: glossarySignToken(target).id,
+          ...(targetRecord ? { targetToken: targetRecord.token, record: targetRecord } : { unresolved: true }),
+        }));
       }
     }
-    const incoming = [];
     for (const candidate of index.records) {
       for (const [predicate, assertion] of carrierRelationEntries(candidate)) {
-        const targets = Array.isArray(assertion) ? assertion : [assertion];
-        if (targets.includes(identity)) incoming.push(Object.freeze({ predicate, from: candidate.identity, record: candidate }));
+        for (const target of Array.isArray(assertion) ? assertion : [assertion]) {
+          if (nearest(candidate, target)?.token === record.token) {
+            incoming.push(Object.freeze({
+              predicate, from: candidate.identity, fromToken: candidate.token,
+              fromFacet: candidate.facet, record: candidate,
+            }));
+          }
+        }
       }
     }
     return Object.freeze({ record, outgoing: Object.freeze(outgoing), incoming: Object.freeze(incoming) });
   }
 
   /**
-   * Score every record against a tokenized query over name (an exact whole-name match scores
-   * highest), aliases, keywords, and description.
-   * @param {string} query
-   * @param {{limit?: number}} [options] `limit` defaults to 20 and is capped at 100.
-   * @returns {readonly {identity: string, name: string, description: string|undefined, section: string, score: number}[]}
+   * Human lexical search with machine-readable identity for each hit.
+   * A hit is a source reading of a scheme and facet, not an assertion
+   * of truth or an equivalence between same-spelled concepts.
    */
   function search(query, { limit } = {}) {
     if (typeof query !== "string" || query.trim() === "") throw new TypeError("query must be nonempty text");
@@ -243,11 +301,18 @@ export function createGlossaryIndexReader(index) {
     const results = [];
     for (const record of index.records) {
       const score = queryTokens.length === 0 ? 0 : scoreRecord(record, queryTokens, wholeQuery);
-      if (score > 0) results.push(Object.freeze({ identity: record.identity, name: record.name, description: record.description, section: record.section, score }));
+      if (score > 0) results.push(Object.freeze({
+        identity: record.identity,
+        sign: glossarySignToken(record.identity).id,
+        token: record.token,
+        scheme: record.scheme, facet: record.facet,
+        name: record.name, description: record.description, section: record.section, score,
+      }));
     }
-    results.sort((left, right) => right.score - left.score || left.identity.localeCompare(right.identity));
+    results.sort((left, right) => right.score - left.score ||
+      left.token.localeCompare(right.token) || left.facet.localeCompare(right.facet));
     return Object.freeze(results.slice(0, effectiveLimit));
   }
 
-  return Object.freeze({ resolve, neighborhood, search });
+  return Object.freeze({ readings, resolve, neighborhood, search });
 }
