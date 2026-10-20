@@ -155,22 +155,32 @@ function carrierRelationEntries(record) {
   return Object.entries(record.relations ?? {}).filter(([predicate]) => RELATION_PREDICATE_RANGES[predicate] === "carrier");
 }
 
-function scoreRecord(record, queryTokens) {
-  const nameTokens = segmentSearchWords(record.name);
+function lexicalRecordOf(record) {
+  // Derived exactly once from this bound, already-admitted source cut.
+  // A revised glossary is a NEW cut and requires a newly bound reader.
+  // These temporary sets are query accelerators, not new source statements.
+  const nameSequence = segmentSearchWords(record.name);
+  return Object.freeze({
+    record, nameSequence,
+    names: new Set(nameSequence),
+    aliases: new Set((record.aliases ?? []).flatMap(segmentSearchWords)),
+    keywords: new Set((record.keywords ?? []).flatMap(segmentSearchWords)),
+    descriptions: new Set(segmentSearchWords(record.description ?? "")),
+  });
+}
+
+function scoreRecord(lexical, queryTokens) {
   let score = 0;
-  // Equality of lexical search key sequences ranks a name, it NEVER proves
-  // source-concept identity or translation. SignCell concept IDs stay upstream.
-  if (queryTokens.length > 0 && nameTokens.length === queryTokens.length &&
-      nameTokens.every((part, at) => part === queryTokens[at]))
+  const { nameSequence } = lexical;
+  // Lexical equivalence ranks a result; it does not merge SignCell senses.
+  if (queryTokens.length > 0 && nameSequence.length === queryTokens.length &&
+      nameSequence.every((part, at) => part === queryTokens[at]))
     score += SEARCH_WEIGHTS.nameExact;
-  const aliasTokens = (record.aliases ?? []).flatMap(segmentSearchWords);
-  const keywordTokens = (record.keywords ?? []).flatMap(segmentSearchWords);
-  const descriptionTokens = segmentSearchWords(record.description ?? "");
   for (const token of queryTokens) {
-    if (nameTokens.includes(token)) score += SEARCH_WEIGHTS.name;
-    if (aliasTokens.includes(token)) score += SEARCH_WEIGHTS.alias;
-    if (keywordTokens.includes(token)) score += SEARCH_WEIGHTS.keyword;
-    if (descriptionTokens.includes(token)) score += SEARCH_WEIGHTS.description;
+    if (lexical.names.has(token)) score += SEARCH_WEIGHTS.name;
+    if (lexical.aliases.has(token)) score += SEARCH_WEIGHTS.alias;
+    if (lexical.keywords.has(token)) score += SEARCH_WEIGHTS.keyword;
+    if (lexical.descriptions.has(token)) score += SEARCH_WEIGHTS.description;
   }
   return score;
 }
@@ -233,6 +243,27 @@ export function createGlossaryIndexReader(index) {
     byToken.set(record.token, [...(byToken.get(record.token) ?? []), record]);
   }
   const nearest = createNearestSchemeResolver(index.records);
+
+  // Index only lexical words actually admitted in THIS source cut. A term
+  // query visits source records containing at least one search word, not
+  // every unrelated definition; neither this map nor its lexical scores
+  // changes the NI identifiers or witness-bearing SignGraph original.
+  // The index is bound to this reader instance, never a second store.
+  const byWord = new Map();
+  for (const record of index.records) {
+    const lexical = lexicalRecordOf(record);
+    const contained = new Set([...lexical.names, ...lexical.aliases,
+      ...lexical.keywords, ...lexical.descriptions]);
+    for (const word of contained) {
+      if (!byWord.has(word)) byWord.set(word, new Set());
+      byWord.get(word).add(lexical);
+    }
+  }
+  const signIds = new Map();
+  const signOf = identity => {
+    if (!signIds.has(identity)) signIds.set(identity, glossarySignToken(identity).id);
+    return signIds.get(identity);
+  };
 
   /** Recover all original definition readings, never quietly choosing a scheme or facet. */
   function readings(selector) {
@@ -299,12 +330,17 @@ export function createGlossaryIndexReader(index) {
     if (typeof query !== "string" || query.trim() === "") throw new TypeError("query must be nonempty text");
     const effectiveLimit = resolveSearchLimit(limit);
     const queryTokens = segmentSearchWords(query);
+    const candidates = new Set();
+    for (const token of queryTokens)
+      for (const lexical of byWord.get(token) ?? []) candidates.add(lexical);
     const results = [];
-    for (const record of index.records) {
-      const score = queryTokens.length === 0 ? 0 : scoreRecord(record, queryTokens);
-      if (score > 0) results.push(Object.freeze({
+    for (const lexical of candidates) {
+      const score = scoreRecord(lexical, queryTokens);
+      if (score <= 0) continue;
+      const { record } = lexical;
+      results.push(Object.freeze({
         identity: record.identity,
-        sign: glossarySignToken(record.identity).id,
+        sign: signOf(record.identity),
         token: record.token,
         scheme: record.scheme, facet: record.facet,
         name: record.name, description: record.description, section: record.section, score,
