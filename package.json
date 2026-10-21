@@ -55,6 +55,10 @@
     "@red-cup-engineering/computer-data-engineering-services-section": "0.2.0",
     "@red-cup-engineering/javascript-node-operation-service": "0.1.0"
   },
-  "license": "UNLICENSED",
-  "private": false
+  "license": "MIT",
+  "private": false,
+  "funding": {
+    "type": "individual",
+    "url": "https://github.com/561-group/.github/blob/main/TIPS.md"
+  }
 }
