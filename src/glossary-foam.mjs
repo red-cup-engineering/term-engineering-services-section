@@ -1,4 +1,4 @@
-import { createSignGraph, glueSignGraphs } from "@red-cup-engineering/signcell/semantic-graph";
+import { createSignGraph, glueSignGraphs } from "@red-cup-engineering/signgraph/semantic-graph";
 import { referenceOf } from "@red-cup-engineering/signcell/typed-mark";
 import { RELATION_PREDICATE_RANGES } from "./term-carrier.mjs";
 import { createNearestSchemeResolver } from "./glossary-index.mjs";
