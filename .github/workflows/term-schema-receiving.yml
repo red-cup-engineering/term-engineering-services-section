@@ -12,6 +12,10 @@ on:
       - 'test/term-schema-package-receiving.test.mjs'
       - 'test/changed-glossary-admission.test.mjs'
       - 'scripts/admit-changed-glossary-paths.mjs'
+      - 'scripts/project-set-of-term-records.mjs'
+      - 'scripts/project-glossary-skos.mjs'
+      - 'scripts/project-glossary-foam.mjs'
+      - 'test/glossary-projection-refusal.test.mjs'
       - '.github/workflows/changed-glossary-admission.yml'
       - 'package.json'
   push:
@@ -27,6 +31,10 @@ on:
       - 'test/term-schema-package-receiving.test.mjs'
       - 'test/changed-glossary-admission.test.mjs'
       - 'scripts/admit-changed-glossary-paths.mjs'
+      - 'scripts/project-set-of-term-records.mjs'
+      - 'scripts/project-glossary-skos.mjs'
+      - 'scripts/project-glossary-foam.mjs'
+      - 'test/glossary-projection-refusal.test.mjs'
       - '.github/workflows/changed-glossary-admission.yml'
       - 'package.json'
   workflow_dispatch:
