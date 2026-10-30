@@ -12,7 +12,7 @@ const BETA = "services/beta-services-section";
 function index({ teamBody = body } = {}) {
   const carrier = (scheme, facet, record) => ({ path: `${scheme}/content/text/glossary/${facet}/${record.identity}.md`, filename: `${record.identity}.md`, text: renderTermMarkdown({ body, visibility: "public", ...record }) });
   return projectGlossaryIndex({ root: "/glossary", documents: [
-    carrier(ALPHA, "terms", { identity: "team", name: "Team", body: teamBody, relations: { "composed-of": ["character", "role"], "see-also": "Some Free Text" } }),
+    carrier(ALPHA, "terms", { identity: "team", name: "Team", body: teamBody, relations: { "composed-of": ["character", "role"], "see-also": "unresolved-note" } }),
     carrier(ALPHA, "terms", { identity: "role", name: "Role" }),
     carrier(ALPHA, "topics", { identity: "role", name: "Role topic" }),
     carrier(BETA, "terms", { identity: "team", name: "Beta team", keywords: ["team"] }),
@@ -51,8 +51,8 @@ test("relations resolve to the nearest concept, land on the sign when nothing de
   assert.deepEqual(composed.map((edge) => edge.object.id).sort(), [glossaryConceptToken(ALPHA, "role").id, glossarySignToken("character").id].sort());
   const definition = edgesOf(foam, alphaTeam, FOAM_PREDICATES.definition)[0].object.id;
   assert.ok(composed.every((edge) => edge.witness.id === definition));
-  assert.deepEqual(foam.wanted.map(({ identity, wantedBy }) => [identity, wantedBy]), [["character", 1]]);
-  assert.equal(foam.accounting.unaddressableTargets, 1, "free text names no sign and is counted, not dropped silently");
+  assert.deepEqual(foam.wanted.map(({ identity, wantedBy }) => [identity, wantedBy]), [["character", 1], ["unresolved-note", 1]]);
+  assert.equal(foam.accounting.unaddressableTargets, 0, "admitted carrier targets are always addressable signs, even when definitions are missing");
   const betaTeam = glossaryConceptToken(BETA, "team").id;
   assert.equal(edgesOf(foam, betaTeam, FOAM_PREDICATES.broader)[0].object.id, betaTeam, "a keyword resolves within its own section first");
 });
@@ -79,4 +79,11 @@ test("a concept filed twice in one section keeps both definitions and is reporte
 test("the authenticated foam carries every admitted carrier, and an unknown audience is refused", () => {
   assert.equal(projectGlossaryFoam(index(), { audience: "authenticated" }).accounting.definitions, 5);
   assert.throws(() => projectGlossaryFoam(index(), { audience: "everyone" }), TypeError);
+});
+
+test("source admission rejects prose pretending to be a carrier relation before SignGraph can silently skip it", () => {
+  assert.throws(() => renderTermMarkdown({
+    identity: "team", name: "Team", body,
+    relations: { "see-also": "Some Free Text" },
+  }), /relation see-also must name a kebab-case carrier identity/);
 });
