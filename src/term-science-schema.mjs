@@ -45,7 +45,30 @@ export function deriveTermAdmissionSchema(scienceSchema, relationVocabulary) {
   schema.title = ADMISSION_TITLE;
   schema.description = ADMISSION_DESCRIPTION;
   schema.additionalProperties = false;
+  // The original Science identity pattern also constrains Engineering's carrier-range
+  // relation objects. Before this, an admitted "composed-of: Actor + Character"
+  // could never resolve to any glossary concept and simply disappeared from the graph.
+  // Keep literal-range predicates as plain strings; do not make them fake concept links.
+  const carrierPattern = scienceSchema.properties.identity?.pattern;
+  if (typeof carrierPattern !== "string" || carrierPattern.length === 0) {
+    throw new TypeError("the original Science carrier identity pattern is required");
+  }
+  const relationValues = (spec) => {
+    const target = spec.range === "carrier"
+      ? { type: "string", pattern: carrierPattern }
+      : { type: "string", minLength: 1 };
+    return {
+      oneOf: [
+        { ...target },
+        { type: "array", minItems: 1, uniqueItems: true, items: { ...target } },
+      ],
+    };
+  };
   schema.properties.relations.propertyNames.enum = predicates.map(([name]) => name);
+  schema.properties.relations.properties = Object.fromEntries(
+    predicates.map(([name, spec]) => [name, relationValues(spec)]),
+  );
+  schema.properties.relations.additionalProperties = false;
   schema.properties.relations.description = ADMISSION_RELATION_DESCRIPTION;
   return Object.freeze(schema);
 }
