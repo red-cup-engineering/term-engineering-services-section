@@ -10,6 +10,9 @@ on:
       - 'test/section-shape.test.mjs'
       - 'test/term-carrier.test.mjs'
       - 'test/term-schema-package-receiving.test.mjs'
+      - 'test/changed-glossary-admission.test.mjs'
+      - 'scripts/admit-changed-glossary-paths.mjs'
+      - '.github/workflows/changed-glossary-admission.yml'
       - 'package.json'
   push:
     branches: [main]
@@ -22,6 +25,9 @@ on:
       - 'test/section-shape.test.mjs'
       - 'test/term-carrier.test.mjs'
       - 'test/term-schema-package-receiving.test.mjs'
+      - 'test/changed-glossary-admission.test.mjs'
+      - 'scripts/admit-changed-glossary-paths.mjs'
+      - '.github/workflows/changed-glossary-admission.yml'
       - 'package.json'
   workflow_dispatch:
 permissions:
