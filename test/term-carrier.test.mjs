@@ -249,3 +249,29 @@ test("default term name uses canonical headings beyond fenced examples", () => {
   const text = "~~~~md\n# Wrong Name\n~~~~\n\nReal Name\n=========\n\nA precise description of the term.\n";
   assert.equal(recognizeTermMarkdown({ text, filename: "fallback.md" }).name, "Real Name");
 });
+
+test("a four-part Simion is admitted as resolvable relations, not opaque prose or a duplicated taxonomy", () => {
+  const simion = {
+    identity: "simion", name: "Simion",
+    body: "A Simion is a Thing composed of Actor, Character, Player and Agent, participating in an inhabited World.",
+    relations: { "composed-of": ["actor", "character", "player", "agent"], "requires": "world" },
+  };
+  assert.equal(admitTermRecord(simion), simion);
+  const markdown = renderTermMarkdown(simion);
+  const recognized = recognizeTermMarkdown({ text: markdown, filename: "simion.md" });
+  assert.equal(recognized.admitted, true, JSON.stringify(recognized.findings));
+  assert.deepEqual(recognized.relations["composed-of"], simion.relations["composed-of"]);
+  for (const bad of ["Actor + Character", "https://example.org/actor", "actor?role=player", ""]) {
+    assert.throws(
+      () => admitTermRecord({ ...simion, relations: { "composed-of": ["actor", bad] } }),
+      /relation composed-of/,
+      "an invalid carrier target must be refused before index/SKOS/foam silently omit it",
+    );
+  }
+  const malformed = markdown.replace("  - character", "  - 'Actor + Character'");
+  const refusal = recognizeTermMarkdown({ text: malformed, filename: "simion.md" });
+  assert.equal(refusal.admitted, false);
+  assert.ok(refusal.findings.some(({ message }) => /relation composed-of/.test(message)));
+  assert.equal(admitTermRecord({ ...simion, relations: { symbol: "Actor + Character" } }).identity, "simion",
+    "literal-range relations must still admit readable text");
+});
