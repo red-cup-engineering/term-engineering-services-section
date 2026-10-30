@@ -33,7 +33,12 @@ export function admitTermRecord(value) {
       if (!Object.hasOwn(RELATION_PREDICATE_VOCABULARY, predicate)) throw new RangeError(`term relation predicate is not authorized: ${predicate}`);
       const assertions = Array.isArray(assertion) ? assertion : [assertion];
       if (assertions.length === 0 || new Set(assertions).size !== assertions.length) throw new TypeError(`relation ${predicate} must contain unique assertions`);
-      for (const item of assertions) nonempty(item, `relation ${predicate}`);
+      for (const item of assertions) {
+        nonempty(item, `relation ${predicate}`);
+        if (RELATION_PREDICATE_VOCABULARY[predicate].range === "carrier" && !IDENTITY.test(item)) {
+          throw new TypeError(`relation ${predicate} must name a kebab-case carrier identity`);
+        }
+      }
     }
   }
   if (value.references !== undefined) {
