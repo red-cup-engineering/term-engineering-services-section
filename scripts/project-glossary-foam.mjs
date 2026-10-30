@@ -25,10 +25,14 @@ export async function projectGlossaryFoamFromRoot({ root, index: indexOut, out, 
   const { index } = await projectSetOfTermRecords({ root, out: indexOut });
   const foam = projectGlossaryFoam(index, { audience });
   await writeFileText(out, `${JSON.stringify(foam, null, 1)}\n`);
-  return { out, id: foam.foam.id, accounting: foam.accounting, wanted: foam.wanted.length, diagnostics: foam.diagnostics.length, obstructions: foam.obstructions.length, refused: index.refused.length };
+  return { out, id: foam.foam.id, accounting: foam.accounting, wanted: foam.wanted.length, diagnostics: foam.diagnostics.length, obstructions: foam.obstructions.length, refused: index.refused.length, refusalDetails: index.refused };
 }
 
 if (isMain(import.meta.url)) {
-  const { out, id, accounting, wanted, diagnostics, obstructions, refused } = await projectGlossaryFoamFromRoot(parseProjectGlossaryFoamArgs(process.argv.slice(2)));
+  const { out, id, accounting, wanted, diagnostics, obstructions, refused, refusalDetails } = await projectGlossaryFoamFromRoot(parseProjectGlossaryFoamArgs(process.argv.slice(2)));
   process.stdout.write(`${JSON.stringify({ foam: id, ...accounting, wantedSigns: wanted, diagnostics, obstructions, refusedCarriers: refused })}\nwrote: ${out}\n`);
+  if (refused > 0) {
+    for (const item of refusalDetails) process.stderr.write(`refused: ${JSON.stringify(item)}\n`);
+    process.exitCode = 1;
+  }
 }
