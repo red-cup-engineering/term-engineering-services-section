@@ -35,6 +35,16 @@ test("the Engineering admission is a source-derived refinement of the separately
   assert.equal(profile.additionalProperties, false);
   assert.deepEqual(profile, deriveTermAdmissionSchema(science, vocabulary),
     "the original Engineering admission profile must be derived from the original scientific schema and typed predicates");
+  assert.equal(profile.properties.relations.additionalProperties, false);
+  for (const [predicate, { range }] of Object.entries(vocabulary)) {
+    const schema = profile.properties.relations.properties[predicate];
+    assert.deepEqual(schema.oneOf[0],
+      range === "carrier" ? { type: "string", pattern: science.properties.identity.pattern }
+        : { type: "string", minLength: 1 }, predicate);
+    assert.deepEqual(schema.oneOf[1], {
+      type: "array", minItems: 1, uniqueItems: true, items: schema.oneOf[0],
+    }, "arrays enforce the same actual range as scalar predicates: " + predicate);
+  }
 
   const output = new Map();
   const sciencePath = join(base, "term.schema.json");
