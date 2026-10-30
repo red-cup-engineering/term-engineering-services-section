@@ -86,6 +86,15 @@ test("the real npm-packed term schema admits its original vocabulary in a separa
     const source = { identity: "model", name: "Model", body: "A source-qualified abstraction.", relations: { "acts-on": "system", symbol: "λ" } };
     assert.equal(admitTermRecord(source), source);
     assert.throws(() => admitTermRecord({ ...source, relations: { "unvetted-key": "system" } }), /predicate is not authorized/u);
+    const composite = { identity: "simion", name: "Simion", body: "A constituted Thing.", relations: { "composed-of": ["actor", "character", "player", "agent"] } };
+    assert.equal(admitTermRecord(composite), composite);
+    assert.deepEqual(engineeringProfile.properties.relations.properties["composed-of"].oneOf[0],
+      { type: "string", pattern: scienceSchema.properties.identity.pattern });
+    assert.deepEqual(engineeringProfile.properties.relations.properties.symbol.oneOf[0],
+      { type: "string", minLength: 1 });
+    assert.throws(() => admitTermRecord({ ...composite, relations: { "composed-of": ["actor", "Actor + Character"] } }),
+      /relation composed-of must name a kebab-case carrier identity/u);
+    assert.equal(admitTermRecord({ ...composite, relations: { symbol: "Actor + Character" } }).identity, "simion");
     assert.throws(() => admitTermRecord({ ...source, untypedResource: true }), /term record does not admit/u);
     process.stdout.write(JSON.stringify({ kind: "term-schema-package-receipt.v1", admitted: true, refusedUnvettedPredicate: true, refusedUnknownResource: true, vocabularySize: keys.length }));
   `;
