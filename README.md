@@ -9,6 +9,8 @@
 
 Engineering policy and operations for semantically admitted Markdown glossary terms and their filename-keyword knowledge web.
 
+Engineering policy and operations for semantically admitted Markdown glossary terms and their filename-keyword knowledge web.
+
 ## Verbs (`term` CLI, `apps/term-cli.mjs`)
 
 - `render` — renders a term record to Markdown; reads a term record JSON object on stdin.
