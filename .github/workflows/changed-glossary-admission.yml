@@ -1,0 +1,49 @@
+name: Admit changed glossary carriers
+
+on:
+  workflow_call:
+    inputs:
+      term_ref:
+        description: Exact immutable Term Engineering commit supplying admission
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  native-term-admission:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: red-cup-engineering/term-engineering-services-section
+          ref: ${{ inputs.term_ref }}
+          path: .term-engineering
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: '24'
+      - name: Verify the selected source revision
+        env:
+          TERM_REF: ${{ inputs.term_ref }}
+        run: test "$(git -C .term-engineering rev-parse HEAD)" = "$TERM_REF"
+      - name: Install original Term Engineering dependencies
+        run: npm --prefix .term-engineering install --no-audit --no-fund --ignore-scripts --fetch-retries=0 --fetch-timeout=30000
+      - name: Admit changed glossary carriers at the original source
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ] || [ -z "$HEAD" ]; then
+            echo "::error::Original source comparison refs are required for glossary admission."
+            exit 1
+          fi
+          git diff --name-only --diff-filter=ACMR -z "$BASE" "$HEAD" | node .term-engineering/scripts/admit-changed-glossary-paths.mjs .

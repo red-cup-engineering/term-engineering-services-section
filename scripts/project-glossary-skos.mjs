@@ -25,10 +25,14 @@ export async function projectGlossarySkosFromRoot({ root, index: indexOut, out, 
   const { index } = await projectSetOfTermRecords({ root, out: indexOut });
   const skos = projectGlossarySkos(index, { base, audience });
   await writeFileText(out, `${JSON.stringify(skos, null, 1)}\n`);
-  return { out, accounting: skos.accounting, refused: index.refused.length };
+  return { out, accounting: skos.accounting, refused: index.refused.length, refusalDetails: index.refused };
 }
 
 if (isMain(import.meta.url)) {
-  const { out, accounting, refused } = await projectGlossarySkosFromRoot(parseProjectGlossarySkosArgs(process.argv.slice(2)));
+  const { out, accounting, refused, refusalDetails } = await projectGlossarySkosFromRoot(parseProjectGlossarySkosArgs(process.argv.slice(2)));
   process.stdout.write(`${JSON.stringify({ ...accounting, refusedCarriers: refused })}\nwrote: ${out}\n`);
+  if (refused > 0) {
+    for (const item of refusalDetails) process.stderr.write(`refused: ${JSON.stringify(item)}\n`);
+    process.exitCode = 1;
+  }
 }
