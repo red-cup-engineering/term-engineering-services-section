@@ -6,7 +6,6 @@ export { TERM_RECORD_SCHEMA, TERM_SCIENCE_SCHEMA };
 
 const IDENTITY = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 const DATE = /^\d{4}-\d{2}-\d{2}$/u;
-const NI = /^ni:\/\/\/sha-256;[A-Za-z0-9_-]{43}$/u;
 function nonempty(value, label) { if (typeof value !== "string" || value.trim() === "") throw new TypeError(`${label} must be nonempty text`); }
 
 /** Admit a strict Engineering refinement of the independent original Science term type. */
@@ -60,11 +59,10 @@ export function admitTermRecord(value) {
     if (value.provenance === null || typeof value.provenance !== "object" || Array.isArray(value.provenance)) throw new TypeError("provenance must be an object");
     for (const key of Object.keys(value.provenance)) if (!Object.hasOwn(TERM_RECORD_SCHEMA.properties.provenance.properties, key)) throw new RangeError(`provenance does not admit ${key}`);
     for (const key of ["date-created", "date-modified", "date-updated"]) if (value.provenance[key] !== undefined && !DATE.test(value.provenance[key])) throw new TypeError(`${key} must be a date`);
-    for (const key of ["sources", "authors", "tags", "utterances"]) if (value.provenance[key] !== undefined) {
+    for (const key of ["sources", "authors", "tags"]) if (value.provenance[key] !== undefined) {
       if (!Array.isArray(value.provenance[key]) || new Set(value.provenance[key]).size !== value.provenance[key].length) throw new TypeError(`provenance ${key} must be a unique array`);
       for (const item of value.provenance[key]) nonempty(item, `provenance ${key}`);
     }
-    if (value.provenance.utterances?.some((item) => !NI.test(item))) throw new TypeError("provenance utterances must be ni:///sha-256 content addresses");
     for (const key of ["id", "domain", "scheme", "status"]) if (value.provenance[key] !== undefined) nonempty(value.provenance[key], `provenance ${key}`);
   }
   if (value["status-function"] !== undefined) {

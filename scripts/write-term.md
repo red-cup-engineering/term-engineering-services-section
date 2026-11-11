@@ -13,7 +13,7 @@ Asserting any `relations` predicate requires listing that predicate in the reque
 
 `semanticEvidence` supplies `sources` and exact `claims.definition`, `.distinction`, and `.consequence` excerpts witnessed in the body. These evidence fields govern admission and are not written into frontmatter: the write is refused unless each claim occurs verbatim in the body (whitespace collapsed, so wrapping does not matter) and every absolute-path source exists.
 
-Cite the Leader utterances a term answers in `provenance.utterances`, as the `ni:///sha-256;…` addresses the leader-utterances records give them.
+Cite the research a term is drawn from in `provenance.sources`: the documents, papers or data that establish the definition. A conversation is not a source.
 
 For a compound such as BAMBOO, put its constituents only on the compound carrier:
 

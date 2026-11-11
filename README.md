@@ -29,7 +29,7 @@ An unknown verb prints it to stderr and exits 2.
 The write contract — request shape, frontmatter admission, relation-key authorization, and evidence requirements — is documented in [`scripts/write-term.md`](scripts/write-term.md).
 Read it before drafting any `write` or `write-set` request.
 `writeTerm` enforces the evidence half of that contract (`admitSemanticEvidence`): a request without sources, without a definition, distinction and consequence each witnessed verbatim in the body (whitespace collapsed), or citing an absolute-path source that does not exist is refused before anything is written.
-A term cites the Leader utterances it answers in `provenance.utterances`, as the `ni:///sha-256;…` addresses the leader-utterances records use.
+A term cites the research it is drawn from in `provenance.sources`: the documents, papers or data that establish the definition.
 
 ## Carrier identity and assertions
 
