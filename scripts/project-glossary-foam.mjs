@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { writeFileText } from "@red-cup-engineering/computer-file-engineering-services-section/write-file";
-import { argument } from "@red-cup-engineering/javascript-node-services-section/argv";
-import { isMain } from "@red-cup-engineering/javascript-file-services-section/javascript-file-main-guard";
+import { argument } from "@red-cup-engineering/javascript-node-engineering-services-section/argv";
+import { isMain } from "@red-cup-engineering/javascript-file-engineering-services-section/javascript-file-main-guard";
 import { projectSetOfTermRecords } from "./project-set-of-term-records.mjs";
 import { projectGlossaryFoam } from "../src/glossary-foam.mjs";
 
