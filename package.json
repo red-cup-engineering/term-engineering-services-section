@@ -45,17 +45,17 @@
   },
   "dependencies": {
     "@red-cup-engineering/computer-filepath-engineering-services-section": "0.1.0",
-    "@red-cup-engineering/computer-text-content-engineering-services-section": "0.1.1-dev.0",
+    "@red-cup-engineering/computer-text-content-engineering-services-section": "0.1.3",
     "@red-cup-engineering/cryptographic-computer-data-engineering-services-section": "0.3.1",
     "@red-cup-engineering/computer-file-engineering-services-section": "0.4.0",
-    "@red-cup-engineering/javascript-file-engineering-services-section": "0.1.1",
+    "@red-cup-engineering/javascript-file-engineering-services-section": "0.1.2",
     "@red-cup-engineering/javascript-node-engineering-services-section": "0.3.2",
     "@red-cup-engineering/markdown-engineering-services-section": "0.5.2",
     "@red-cup-engineering/computer-triplet-serialized-content-engineering-services-section": "0.1.1",
     "@red-cup-engineering/signcell": "0.10.0",
     "@red-cup-engineering/computer-data-engineering-services-section": "0.2.0",
     "@red-cup-engineering/javascript-node-operation-service": "0.1.0",
-    "@red-cup-engineering/signgraph": "0.7.1-dev.556"
+    "@red-cup-engineering/signgraph": "0.10.2"
   },
   "license": "MIT",
   "private": false,
