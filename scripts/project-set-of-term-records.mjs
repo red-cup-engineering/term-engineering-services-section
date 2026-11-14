@@ -2,10 +2,12 @@
 import { readFileText } from "@red-cup-engineering/computer-file-engineering-services-section/read-file";
 import { writeFileText } from "@red-cup-engineering/computer-file-engineering-services-section/write-file";
 import { confinePath } from "@red-cup-engineering/computer-filepath-engineering-services-section/filepath";
-import { argument } from "@red-cup-engineering/javascript-node-engineering-services-section/argv";
 import { isMain } from "@red-cup-engineering/javascript-file-engineering-services-section/javascript-file-main-guard";
 import { projectGlossaryIndex } from "../src/glossary-index.mjs";
 import { findGlossaryTermMarkdownPaths } from "../src/glossary-index.mjs";
+
+/** The value after `flag` on a command line, or undefined. */
+const argument = (flag, argv = process.argv.slice(2)) => { const at = argv.indexOf(flag); return at >= 0 && at + 1 < argv.length ? argv[at + 1] : undefined; };
 
 export { projectGlossaryIndex } from "../src/glossary-index.mjs";
 

@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 import { writeFileText } from "@red-cup-engineering/computer-file-engineering-services-section/write-file";
-import { argument } from "@red-cup-engineering/javascript-node-engineering-services-section/argv";
 import { isMain } from "@red-cup-engineering/javascript-file-engineering-services-section/javascript-file-main-guard";
 import { projectSetOfTermRecords } from "./project-set-of-term-records.mjs";
 import { DEFAULT_KNOWLEDGE_BASE, projectGlossarySkos } from "../src/glossary-skos.mjs";
+
+/** The value after `flag` on a command line, or undefined. */
+const argument = (flag, argv = process.argv.slice(2)) => { const at = argv.indexOf(flag); return at >= 0 && at + 1 < argv.length ? argv[at + 1] : undefined; };
 
 /**
  * Parse `--root <dir> --index <file.json> --out <file.jsonld> [--base <iri/>] [--audience public|authenticated]`.
