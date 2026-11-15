@@ -52,7 +52,7 @@
     "@red-cup-engineering/computer-triplet-serialized-content-engineering-services-section": "^0.2.4",
     "@red-cup-engineering/signcell": "^0.17.5",
     "@red-cup-engineering/computer-data-engineering-services-section": "^0.7.4",
-    "@red-cup-engineering/javascript-node-operation-service": "^0.1.1",
+    "@red-cup-engineering/node-js-function-engineering-services-section": "^0.5.4",
     "@red-cup-engineering/signgraph": "^0.10.2"
   },
   "license": "MIT",
