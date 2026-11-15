@@ -2,6 +2,7 @@ import { readMarkdownStructure } from "@red-cup-engineering/markdown-engineering
 import { basename, extname as projectFilepathExtension } from "node:path";
 import { createMarkdownDocument } from "@red-cup-engineering/markdown-engineering-services-section/create-markdown-document";
 import { readMarkdownFrontmatter } from "@red-cup-engineering/markdown-engineering-services-section/read-markdown-frontmatter";
+import { splitMarkdownFrontmatterFence } from "@red-cup-engineering/markdown-engineering-services-section/split-markdown-frontmatter-fence";
 import RELATION_PREDICATE_VOCABULARY from "../schemas/glossary/term/relation-predicates.json" with { type: "json" };
 import { TERM_RECORD_SCHEMA, admitTermRecord } from "../schemas/glossary/term/term.schema.mjs";
 import { slugify } from "@red-cup-engineering/computer-text-content-engineering-services-section/slugify-text";
@@ -107,6 +108,9 @@ export function renderTermMarkdown(input = {}, { authorizedRelationKeys = AUTHOR
   return createMarkdownDocument(record, { semanticLinefeeds: false });
 }
 export function readTermMarkdown(text) {
+  // An explicit fence holding no YAML is a YAML null, not an empty term record; only an absent fence defaults.
+  const fence = typeof text === "string" ? splitMarkdownFrontmatterFence(text) : null;
+  if (fence?.format === "yaml" && fence.raw.trim() === "") throw new TypeError("term frontmatter fence is empty: an explicit YAML null is not a term record");
   const parsed = readMarkdownFrontmatter(text, { frontmatterFormats: ["yaml"], jsonObjectFrontmatter: false });
   return Object.freeze({ frontmatter: parsed.frontmatter, body: parsed.body });
 }

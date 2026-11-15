@@ -52,7 +52,7 @@ test("no unseen claim becomes denial, and hidden concept cannot be recovered via
   assert.deepEqual(absent.sources, []);
   assert.equal(absent.section.readings.contested, 0);
   assert.throws(() => glossaryClaimsAt(source, { scheme: ALPHA, identity: "secret" }), TypeError);
-  assert.throws(() => glossaryClaimsAt(source, { scheme: ALPHA, identity: "team", actor: "someone-else" }), /exact scheme/);
+  assert.throws(() => glossaryClaimsAt(source, { scheme: ALPHA, identity: "team", actor: "someone-else" }), /exactly one source concept/);
 });
 
 

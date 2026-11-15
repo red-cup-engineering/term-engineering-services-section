@@ -199,7 +199,7 @@ test("UAX29 lexical lookup recovers multilingual labels while SignCell scheme-sp
   });
   const reader = createGlossaryIndexReader(projectGlossaryIndex({
     root: "/glossary", documents: [
-      word(alpha, "语言空间", ["L-Space", "語言空間"], ["因果集"]),
+      word(alpha, "语言空间", ["L-Space", "語言空間"], ["causal-set"]),
       word(beta, "语义空间"),
     ],
   }));
@@ -214,8 +214,8 @@ test("UAX29 lexical lookup recovers multilingual labels while SignCell scheme-sp
     "only the originally authored alias connects English to this concept");
   assert.deepEqual(reader.search("語言空間").map(hit => hit.scheme), [alpha],
     "traditional Han remains an explicitly authored alias, never an inferred equivalence");
-  assert.deepEqual(reader.search("因果集").map(hit => hit.scheme), [alpha],
-    "the source keyword must be segmented by the same Unicode provider as queries");
+  assert.deepEqual(reader.search("causal").map(hit => hit.scheme), [alpha],
+    "a keyword names a carrier identity, segmented by the same Unicode provider as queries");
   assert.throws(() => reader.resolve("language-space"), /ambiguous glossary sign\/concept/,
     "a lexical query must not elect one meaning across two source schemes");
 });
@@ -227,7 +227,7 @@ test("repeated Unicode lexical queries reuse the admitted cut without losing nam
     path: alpha + "/content/text/glossary/terms/causal-sets.md",
     filename: "causal-sets.md",
     text: renderTermMarkdown({ identity: "causal-sets", name: "因果集",
-      aliases: ["Causal Sets"], keywords: ["kinematic space"],
+      aliases: ["Causal Sets"], keywords: ["kinematic-space"],
       description: "Causal order of witnessed events", body: operationBody }),
   });
   const reader = createGlossaryIndexReader(projectGlossaryIndex({ root: "/glossary", documents: source }));
