@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from "node:util";
 import { readMarkdownStructure } from "@red-cup-engineering/markdown-engineering-services-section/read-markdown-structure";
 import { basename, extname as projectFilepathExtension } from "node:path";
 import { createMarkdownDocument } from "@red-cup-engineering/markdown-engineering-services-section/create-markdown-document";
@@ -264,33 +265,49 @@ export function admitTermMarkdown(input) {
   const recognized = recognizeTermMarkdown(input); if (!recognized.admitted) { const error = new Error(`term refused: ${recognized.findings.map(({ rule, message }) => `${rule}: ${message}`).join("; ")}`); error.findings = recognized.findings; throw error; } return recognized;
 }
 
-const LEGACY_META = new Set(["id", "title", "domain", "authors", "tags", "cites", "sources", "date-created", "date-modified", "date-updated"]);
-export function migrateLegacyTermMarkdown({ text, filename, knownKeywordIdentities } = {}) {
-  const parsed = readTermMarkdown(text); const frontmatter = parsed.frontmatter ?? {}; const carrierBody = parsed.body; const identity = filenameIdentity(filename);
-  const name = frontmatter.name ?? frontmatter.title ?? frontmatter.id ?? identity;
-  const relations = { ...(frontmatter.relations ?? {}) }; for (const [key, value] of Object.entries(frontmatter)) if (!TERM_KEYS.includes(key) && !LEGACY_META.has(key) && AUTHORIZED_RELATION_PREDICATES.includes(key)) relations[key] = value;
-  const priorProvenance = frontmatter.provenance ?? {};
-  const sources = [...new Set([...(Array.isArray(priorProvenance.sources) ? priorProvenance.sources : []), ...(Array.isArray(frontmatter.sources) ? frontmatter.sources : []), ...(Array.isArray(frontmatter.cites) ? frontmatter.cites : [])].map(String).filter(Boolean))];
-  const dateCreated = String(frontmatter["date-created"] ?? priorProvenance["date-created"] ?? "").slice(0, 10); const dateModified = String(frontmatter["date-modified"] ?? frontmatter["date-updated"] ?? priorProvenance["date-modified"] ?? "").slice(0, 10);
-  const references = Object.fromEntries(Object.entries(frontmatter.references ?? {}).map(([key, value]) => {
-    if (/^[a-z][a-z0-9-]*[0-9]{4}[a-z0-9-]*$/u.test(key)) return [key, value];
-    const year = /[0-9]{4}/u.exec(key)?.[0];
-    const normalized = year ? `${key.replace(year, "").replace(/[^a-z0-9-]/gu, "")}${year}` : key;
-    return [normalized, value];
-  }));
-  const migratedKeywords = Array.isArray(frontmatter.keywords) ? normalizeKeywords(frontmatter.keywords.map(String)).filter((keyword) => knownKeywordIdentities === undefined || knownKeywordIdentities.has(keyword)) : [];
-  const record = {
-    identity, name: normalizeTermName(String(name)), body: body(carrierBody),
-    ...(frontmatter.description ? { description: normalizeTermDescription(String(frontmatter.description)) } : {}),
-    ...(frontmatter.type ? { type: normalizeTermResourceTag(String(frontmatter.type), "type") } : {}),
-    ...(frontmatter.creator ? { creator: normalizeTermResourceTag(String(frontmatter.creator), "creator") } : {}),
-    ...(Array.isArray(frontmatter.aliases) ? { aliases: normalizeTermAliases(frontmatter.aliases.map(String), { name: String(name) }) } : {}),
-    ...(migratedKeywords.length ? { keywords: migratedKeywords } : {}),
-    ...(Object.keys(relations).length ? { relations } : {}),
-    ...(Object.keys(references).length ? { references } : {}),
-    ...((dateCreated || dateModified || sources.length) ? { provenance: { ...(dateCreated ? { "date-created": dateCreated } : {}), ...(dateModified ? { "date-modified": dateModified } : {}), ...(sources.length ? { sources } : {}) } } : {}),
-  };
-  const markdown = renderTermMarkdown(record); const recognized = recognizeTermMarkdown({ text: markdown, filename });
-  if (!recognized.admitted) throw new Error(`migrated term ${filename} did not admit: ${recognized.findings.map(({ message }) => message).join("; ")}`);
-  return Object.freeze({ record, markdown, removedKeys: Object.freeze(Object.keys(frontmatter).filter((key) => !TERM_KEYS.includes(key) && !(key in relations))) });
+/** A refusal is not permission to rewrite the original research carrier. */
+function migrationRefusal(filename, findings) {
+  const error = new Error(`term migration refused for ${filename}: ${findings.map(item => item.message).join("; ")}`);
+  error.code = "ERR_TERM_MIGRATION_REFUSED";
+  error.findings = Object.freeze([...findings]);
+  return error;
+}
+
+/**
+ * Migrate only a byte-preserving, unambiguous legacy title spelling. Admitted
+ * carriers are exact no-ops. Unknown metadata, conflicts, unsupported YAML
+ * spelling, and any remaining schema refusal need source-owner review. The
+ * migration batch is not the vocabulary and does not filter retrieval keys.
+ */
+export function migrateLegacyTermMarkdown({ text, filename } = {}) {
+  const original = recognizeTermMarkdown({ text, filename });
+  if (original.admitted) return Object.freeze({ record: original, markdown: text, removedKeys: Object.freeze([]) });
+
+  const fence = typeof text === "string" ? splitMarkdownFrontmatterFence(text) : null;
+  let metadata;
+  try { metadata = readTermMarkdown(text).frontmatter ?? {}; }
+  catch { throw migrationRefusal(filename, original.findings); }
+  if (fence?.format !== "yaml" || typeof metadata.title !== "string" ||
+      Object.hasOwn(metadata, "name") || !original.findings.some(item => item.rule === "unknown-key" &&
+        item.message === "term frontmatter does not admit title"))
+    throw migrationRefusal(filename, original.findings);
+
+  // Edit the key token only. Reparse to rule out YAML block scalar, mapping,
+  // duplicate-token or quoting cases that don't mean this exact field rename.
+  const tokens = [...fence.raw.matchAll(/^title(?=:[ \t])/gmu)];
+  if (tokens.length !== 1) throw migrationRefusal(filename, [...original.findings,
+    finding("metadata-spelling", "can only rename one unquoted top-level title key")]);
+  const offset = fence.source.rawStart + tokens[0].index;
+  const markdown = text.slice(0, offset) + "name" + text.slice(offset + "title".length);
+  const after = splitMarkdownFrontmatterFence(markdown);
+  const { title, ...rest } = metadata;
+  let updated;
+  try { updated = readTermMarkdown(markdown).frontmatter; }
+  catch { throw migrationRefusal(filename, original.findings); }
+  if (!isDeepStrictEqual(updated, { ...rest, name: title }) || after?.body !== fence.body)
+    throw migrationRefusal(filename, [finding("source-preservation", "metadata or body would change beyond the approved key rename")]);
+
+  const record = recognizeTermMarkdown({ text: markdown, filename });
+  if (!record.admitted) throw migrationRefusal(filename, record.findings);
+  return Object.freeze({ record, markdown, removedKeys: Object.freeze(["title"]) });
 }
