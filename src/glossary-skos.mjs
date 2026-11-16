@@ -1,4 +1,4 @@
-import { SCHEMA_ORG_CONTEXT, SKOS_NAMESPACE, definedTermJsonLd, definedTermSetJsonLd } from "@red-cup-engineering/computer-triplet-serialized-content-engineering-services-section/schema-org";
+import { SCHEMA_ORG_CONTEXT, SKOS_NAMESPACE, definedTermJsonLd, definedTermSetJsonLd } from "@red-cup-engineering/computer-triplet-serialized-content-engineering-services-section/schema-org/generic";
 import { RELATION_PREDICATE_RANGES } from "./term-carrier.mjs";
 import { createNearestSchemeResolver } from "./glossary-index.mjs";
 import { ROOT_SCHEME_PATH, schemeIriPath } from "./glossary-token.mjs";
