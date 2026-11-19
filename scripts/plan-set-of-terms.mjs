@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { classifyMarkdownCorpusPath, planMarkdownCorpusCleanup } from "../src/term-migration.mjs";
+import { execGitSync } from '@red-cup-engineering/git-engine/git-process';
 
 function gitPaths(root, args) {
-  const output = execFileSync("git", [...args, "-z", "--", "*.md"], { cwd: root, encoding: "utf8", maxBuffer: 1024 * 1024 * 256 });
+  const output = execGitSync([...args, "-z", "--", "*.md"], { cwd: root, encoding: "utf8", maxBuffer: 1024 * 1024 * 256 });
   return output.split("\0").filter(Boolean);
 }
 
