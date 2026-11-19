@@ -1,0 +1,64 @@
+{
+  "name": "@red-cup-engineering/term-engineering-services-section",
+  "version": "0.3.9-dev.0",
+  "type": "module",
+  "description": "Engineering policy and operations for semantically admitted Markdown glossary terms and their filename-keyword knowledge web.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/red-cup-engineering/term-engineering-services-section.git"
+  },
+  "exports": {
+    "./carrier": "./src/term-carrier.mjs",
+    "./migration": "./src/term-migration.mjs",
+    "./description": "./src/term-description.mjs",
+    "./relations": "./src/term-relation-keys.mjs",
+    "./glossary-index": "./src/glossary-index.mjs",
+    "./glossary-skos": "./src/glossary-skos.mjs",
+    "./term-carrier": "./src/term-carrier.mjs",
+    "./term-operations": "./src/term-operations.mjs",
+    "./term-migration": "./src/term-migration.mjs",
+    "./term-relation-keys": "./src/term-relation-keys.mjs",
+    "./term-schema": "./schemas/glossary/term/term.schema.mjs",
+    "./term.schema.json": "./schemas/glossary/term/term.schema.json",
+    "./relation-predicates.json": "./schemas/glossary/term/relation-predicates.json",
+    "./glossary-token": "./src/glossary-token.mjs",
+    "./glossary-foam": "./src/glossary-foam.mjs",
+    "./glossary-claims": "./src/glossary-claims.mjs",
+    "./term-admission.schema.json": "./schemas/glossary/term/term-admission.schema.json"
+  },
+  "bin": {
+    "term": "apps/term-cli.mjs",
+    "project-set-of-term-records": "scripts/project-set-of-term-records.mjs",
+    "project-glossary-skos": "scripts/project-glossary-skos.mjs",
+    "project-glossary-foam": "scripts/project-glossary-foam.mjs"
+  },
+  "files": [
+    "apps/",
+    "src/",
+    "scripts/",
+    "schemas/"
+  ],
+  "scripts": {
+    "check": "node --check src/*.mjs && node --check scripts/*.mjs && node --check apps/*.mjs && node --check schemas/glossary/term/*.mjs"
+  },
+  "dependencies": {
+    "@red-cup-engineering/computer-filepath-engineering-services-section": "^0.1.3",
+    "@red-cup-engineering/computer-text-content-engineering-services-section": "^0.1.3",
+    "@red-cup-engineering/cryptographic-computer-data-engineering-services-section": "^0.3.5",
+    "@red-cup-engineering/computer-file-engineering-services-section": "^0.8.8",
+    "@red-cup-engineering/javascript-file-engineering-services-section": "^0.1.3",
+    "@red-cup-engineering/markdown-engineering-services-section": "^0.5.9",
+    "@red-cup-engineering/computer-triplet-serialized-content-engineering-services-section": "^0.2.9",
+    "@red-cup-engineering/signcell": "^0.18.0",
+    "@red-cup-engineering/computer-data-engineering-services-section": "^0.7.4",
+    "@red-cup-engineering/node-js-function-engineering-services-section": "^0.5.4",
+    "@red-cup-engineering/signgraph": "^0.10.2",
+    "@red-cup-engineering/typed-content": "0.1.0-dev.0"
+  },
+  "license": "MIT",
+  "private": false,
+  "funding": {
+    "type": "individual",
+    "url": "https://github.com/561-group/.github/blob/main/TIPS.md"
+  }
+}
