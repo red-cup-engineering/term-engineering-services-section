@@ -67,18 +67,18 @@ export function glossaryClaimsAt(foam, selector) {
     selector.predicate === undefined ? {} : { predicate: selector.predicate });
   const claims = new Map(), original = new Map();
   for (const { id, edge } of edges) {
-    const validated = createSignClaim({
+    const admitted = createSignClaim({
       subject: edge.subject, predicate: edge.predicate, object: edge.object,
       for: [edge.witness], against: [],
     });
-    if (!validated.ok) reject("original SignGraph edge did not admit a SignCell claim");
-    const key = address(validated.value);
+    if (!admitted.ok) reject("original SignGraph edge did not admit a SignCell claim");
+    const key = address(admitted.value);
     const prior = claims.get(key);
     if (prior) {
-      const joined = joinClaimsKnowledge(prior, validated.value);
+      const joined = joinClaimsKnowledge(prior, admitted.value);
       if (!joined.ok) reject("original SignCell knowledge join refused");
       claims.set(key, joined.value);
-    } else claims.set(key, validated.value);
+    } else claims.set(key, admitted.value);
     const references = original.get(key) ?? [];
     references.push(Object.freeze({ edge: id, witness: edge.witness }));
     original.set(key, references);

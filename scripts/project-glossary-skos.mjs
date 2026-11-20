@@ -31,10 +31,10 @@ export async function projectGlossarySkosFromRoot({ root, index: indexOut, out, 
 }
 
 if (isMain(import.meta.url)) {
-  const { out, accounting, refused: rejected, refusalDetails: rejectionDetails } = await projectGlossarySkosFromRoot(parseProjectGlossarySkosArgs(process.argv.slice(2)));
-  process.stdout.write(`${JSON.stringify({ ...accounting, refusedCarriers: rejected })}\nwrote: ${out}\n`);
-  if (rejected > 0) {
-    for (const item of rejectionDetails) process.stderr.write(`refused: ${JSON.stringify(item)}\n`);
+  const { out, accounting, refused, refusalDetails } = await projectGlossarySkosFromRoot(parseProjectGlossarySkosArgs(process.argv.slice(2)));
+  process.stdout.write(`${JSON.stringify({ ...accounting, refusedCarriers: refused })}\nwrote: ${out}\n`);
+  if (refused > 0) {
+    for (const item of refusalDetails) process.stderr.write(`refused: ${JSON.stringify(item)}\n`);
     process.exitCode = 1;
   }
 }

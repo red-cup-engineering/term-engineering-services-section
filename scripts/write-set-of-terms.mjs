@@ -21,7 +21,7 @@ export async function writeSetOfTerms(requests, operations = {}) {
       attempts.push(Object.freeze({ identity, disposition: "refused", reason: error.message, findings: Object.freeze(error.findings ?? []) }));
     }
   }
-  const written = attempts.filter(({ disposition: decision }) => decision === "written").length;
+  const written = attempts.filter(({ disposition }) => disposition === "written").length;
   return Object.freeze({
     disposition: written === requests.length ? "written" : written === 0 ? "refused" : "partially-written",
     counts: Object.freeze({ input: requests.length, written, refused: requests.length - written }),
