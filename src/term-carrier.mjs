@@ -87,24 +87,24 @@ function filenameIdentity(filename) {
 }
 
 export function renderTermMarkdown(input = {}, { authorizedRelationKeys = AUTHORIZED_RELATION_PREDICATES } = {}) {
-  const admitted = admitTermRecord(input);
-  const directAssertions = Object.fromEntries(Object.entries(admitted).filter(([key]) => !TERM_KEYS.includes(key)));
+  const validated = admitTermRecord(input);
+  const directAssertions = Object.fromEntries(Object.entries(validated).filter(([key]) => !TERM_KEYS.includes(key)));
   const record = {
     ...directAssertions,
-    identity: admitted.identity,
-    name: normalizeTermName(admitted.name),
-    ...(admitted.description === undefined ? {} : { description: normalizeTermDescription(admitted.description) }),
-    ...(admitted["consent-status"] === undefined ? {} : { "consent-status": normalizeConsentStatus(admitted["consent-status"]) }),
-    ...(admitted.visibility === undefined ? {} : { visibility: admitted.visibility }),
-    ...(admitted.type === undefined ? {} : { type: normalizeTermResourceTag(admitted.type, "type") }),
-    ...(admitted.creator === undefined ? {} : { creator: normalizeTermResourceTag(admitted.creator, "creator") }),
-    ...(admitted.aliases?.length ? { aliases: normalizeTermAliases(admitted.aliases, { name: admitted.name }) } : {}),
-    ...(admitted.keywords?.length ? { keywords: normalizeKeywords(admitted.keywords) } : {}),
-    ...(admitted.relations && Object.keys(admitted.relations).length ? { relations: normalizeTermRelations(admitted.relations, { authorizedRelationKeys }) } : {}),
-    ...(admitted.references && Object.keys(admitted.references).length ? { references: admitted.references } : {}),
-    ...(admitted.provenance && Object.keys(admitted.provenance).length ? { provenance: admitted.provenance } : {}),
-    ...(admitted["status-function"] && Object.keys(admitted["status-function"]).length ? { "status-function": admitted["status-function"] } : {}),
-    body: `${body(admitted.body)}\n`,
+    identity: validated.identity,
+    name: normalizeTermName(validated.name),
+    ...(validated.description === undefined ? {} : { description: normalizeTermDescription(validated.description) }),
+    ...(validated["consent-status"] === undefined ? {} : { "consent-status": normalizeConsentStatus(validated["consent-status"]) }),
+    ...(validated.visibility === undefined ? {} : { visibility: validated.visibility }),
+    ...(validated.type === undefined ? {} : { type: normalizeTermResourceTag(validated.type, "type") }),
+    ...(validated.creator === undefined ? {} : { creator: normalizeTermResourceTag(validated.creator, "creator") }),
+    ...(validated.aliases?.length ? { aliases: normalizeTermAliases(validated.aliases, { name: validated.name }) } : {}),
+    ...(validated.keywords?.length ? { keywords: normalizeKeywords(validated.keywords) } : {}),
+    ...(validated.relations && Object.keys(validated.relations).length ? { relations: normalizeTermRelations(validated.relations, { authorizedRelationKeys }) } : {}),
+    ...(validated.references && Object.keys(validated.references).length ? { references: validated.references } : {}),
+    ...(validated.provenance && Object.keys(validated.provenance).length ? { provenance: validated.provenance } : {}),
+    ...(validated["status-function"] && Object.keys(validated["status-function"]).length ? { "status-function": validated["status-function"] } : {}),
+    body: `${body(validated.body)}\n`,
   };
   return createMarkdownDocument(record, { semanticLinefeeds: false });
 }
@@ -146,15 +146,15 @@ function deriveIdentity(metadata, filename, findings) {
  * @returns {Record<string, unknown>}
  */
 function foldCarrierMetadata(metadata, findings) {
-  const provenance = {};
-  for (const [key, value] of Object.entries(metadata.provenance ?? {})) if (value !== null && value !== undefined) provenance[key] = value;
+  const origin = {};
+  for (const [key, value] of Object.entries(metadata.provenance ?? {})) if (value !== null && value !== undefined) origin[key] = value;
   for (const key of CARRIER_METADATA_KEYS) {
     const value = metadata[key];
     if (value === null || value === undefined) continue;
-    if (Object.hasOwn(provenance, key) && JSON.stringify(provenance[key]) !== JSON.stringify(value)) { findings.push(finding("provenance-conflict", `top-level ${key} conflicts with provenance.${key}`)); continue; }
-    provenance[key] = value;
+    if (Object.hasOwn(origin, key) && JSON.stringify(origin[key]) !== JSON.stringify(value)) { findings.push(finding("provenance-conflict", `top-level ${key} conflicts with provenance.${key}`)); continue; }
+    origin[key] = value;
   }
-  return provenance;
+  return origin;
 }
 
 /**
@@ -238,14 +238,14 @@ export function recognizeTermDocument({ frontmatter, body: markdownBody = "", fi
   const authority = relationAuthority(authorizedRelationKeys);
   for (const key of Object.keys(metadata)) if (!TERM_KEYS.includes(key) && !CARRIER_METADATA_KEYS.includes(key) && !STATUS_FUNCTION_KEYS.includes(key) && !authority.has(key)) findings.push(finding("unknown-key", `term frontmatter does not admit ${key}`));
   const identity = deriveIdentity(metadata, filename, findings);
-  const provenance = foldCarrierMetadata(metadata, findings);
+  const origin = foldCarrierMetadata(metadata, findings);
   const relations = foldTopLevelRelations(metadata, authority, findings);
   const statusFunction = foldStatusFunction(metadata, findings);
   const record = { ...metadata, identity, body: parsed.body.trim() };
   for (const key of CARRIER_METADATA_KEYS) delete record[key];
   for (const key of STATUS_FUNCTION_KEYS) delete record[key];
   for (const key of authority) delete record[key];
-  if (Object.keys(provenance).length > 0) record.provenance = provenance; else delete record.provenance;
+  if (Object.keys(origin).length > 0) record.provenance = origin; else delete record.provenance;
   if (Object.keys(statusFunction).length > 0) record["status-function"] = statusFunction; else delete record["status-function"];
   if (record.name === undefined || (typeof record.name === "string" && record.name.trim() === "")) {
     const defaulted = defaultTermName(record.body, identity);
@@ -266,7 +266,7 @@ export function admitTermMarkdown(input) {
 }
 
 /** A refusal is not permission to rewrite the original research carrier. */
-function migrationRefusal(filename, findings) {
+function migrationRejection(filename, findings) {
   const error = new Error(`term migration refused for ${filename}: ${findings.map(item => item.message).join("; ")}`);
   error.code = "ERR_TERM_MIGRATION_REFUSED";
   error.findings = Object.freeze([...findings]);
@@ -286,16 +286,16 @@ export function migrateLegacyTermMarkdown({ text, filename } = {}) {
   const fence = typeof text === "string" ? splitMarkdownFrontmatterFence(text) : null;
   let metadata;
   try { metadata = readTermMarkdown(text).frontmatter ?? {}; }
-  catch { throw migrationRefusal(filename, original.findings); }
+  catch { throw migrationRejection(filename, original.findings); }
   if (fence?.format !== "yaml" || typeof metadata.title !== "string" ||
       Object.hasOwn(metadata, "name") || !original.findings.some(item => item.rule === "unknown-key" &&
         item.message === "term frontmatter does not admit title"))
-    throw migrationRefusal(filename, original.findings);
+    throw migrationRejection(filename, original.findings);
 
   // Edit the key token only. Reparse to rule out YAML block scalar, mapping,
   // duplicate-token or quoting cases that don't mean this exact field rename.
   const tokens = [...fence.raw.matchAll(/^title(?=:[ \t])/gmu)];
-  if (tokens.length !== 1) throw migrationRefusal(filename, [...original.findings,
+  if (tokens.length !== 1) throw migrationRejection(filename, [...original.findings,
     finding("metadata-spelling", "can only rename one unquoted top-level title key")]);
   const offset = fence.source.rawStart + tokens[0].index;
   const markdown = text.slice(0, offset) + "name" + text.slice(offset + "title".length);
@@ -303,11 +303,11 @@ export function migrateLegacyTermMarkdown({ text, filename } = {}) {
   const { title, ...rest } = metadata;
   let updated;
   try { updated = readTermMarkdown(markdown).frontmatter; }
-  catch { throw migrationRefusal(filename, original.findings); }
+  catch { throw migrationRejection(filename, original.findings); }
   if (!isDeepStrictEqual(updated, { ...rest, name: title }) || after?.body !== fence.body)
-    throw migrationRefusal(filename, [finding("source-preservation", "metadata or body would change beyond the approved key rename")]);
+    throw migrationRejection(filename, [finding("source-preservation", "metadata or body would change beyond the approved key rename")]);
 
   const record = recognizeTermMarkdown({ text: markdown, filename });
-  if (!record.admitted) throw migrationRefusal(filename, record.findings);
+  if (!record.admitted) throw migrationRejection(filename, record.findings);
   return Object.freeze({ record, markdown, removedKeys: Object.freeze(["title"]) });
 }

@@ -141,14 +141,14 @@ export function projectGlossaryIndex({ root, documents } = {}) {
   if (typeof root !== "string" || root.trim() === "") throw new TypeError("root must be a nonempty string");
   if (!Array.isArray(documents)) throw new TypeError("documents must be an array");
   const records = [];
-  const refused = [];
+  const rejected = [];
   for (const { path, filename, text } of documents) {
     const recognized = recognizeTermMarkdown({ text, filename });
-    if (!recognized.admitted) { refused.push(Object.freeze({ path, findings: recognized.findings })); continue; }
+    if (!recognized.admitted) { rejected.push(Object.freeze({ path, findings: recognized.findings })); continue; }
     records.push(projectRecord(recognized, path, subsectionOf(root, path)));
   }
   records.sort((left, right) => left.identity.localeCompare(right.identity) || left.path.localeCompare(right.path));
-  return Object.freeze({ schema: SCHEMA, root, records: Object.freeze(records), refused: Object.freeze(refused) });
+  return Object.freeze({ schema: SCHEMA, root, records: Object.freeze(records), refused: Object.freeze(rejected) });
 }
 
 function carrierRelationEntries(record) {

@@ -21,7 +21,7 @@ const collapsed = (text) => text.replace(/\s+/gu, " ").trim();
  * @param {string} body
  * @param {{sourceExists?: (path: string) => boolean}} [operations]
  */
-export function admitSemanticEvidence(semanticEvidence, body, { sourceExists = existsSync } = {}) {
+export function validateSemanticEvidence(semanticEvidence, body, { sourceExists = existsSync } = {}) {
   if (!semanticEvidence || typeof semanticEvidence !== "object") throw new TypeError("semanticEvidence is required: sources and claims.definition, .distinction, .consequence");
   const { sources, claims } = semanticEvidence;
   if (!Array.isArray(sources) || sources.length === 0 || sources.some((source) => typeof source !== "string" || source.trim() === "")) throw new TypeError("semanticEvidence.sources must name at least one source");
@@ -41,12 +41,12 @@ export async function writeTerm({ termDirectory, term, semanticEvidence, knownCo
   const identity = filename.slice(0, -3);
   if (term.identity !== identity) throw new TypeError("term.identity must equal the filename stem");
   const { filename: _filename, ...record } = term;
-  admitSemanticEvidence(semanticEvidence, record.body, { sourceExists: operations.sourceExists });
+  validateSemanticEvidence(semanticEvidence, record.body, { sourceExists: operations.sourceExists });
   const markdown = renderTermMarkdown(record, { authorizedRelationKeys }); const path = join(resolve(termDirectory), filename);
   const pathExists = operations.exists ?? existsSync;
   if (pathExists(path) && !overwrite) throw new Error(`term already exists; explicit overwrite required: ${path}`);
-  const admitted = admitTermMarkdown({ text: markdown, filename, knownCompoundStems, authorizedRelationKeys });
+  const validated = admitTermMarkdown({ text: markdown, filename, knownCompoundStems, authorizedRelationKeys });
   const write = operations.write ?? writeFileText;
   await write(path, markdown);
-  return Object.freeze({ disposition: "written", path, filename, admitted });
+  return Object.freeze({ disposition: "written", path, filename, admitted: validated });
 }

@@ -31,10 +31,10 @@ export async function projectGlossaryFoamFromRoot({ root, index: indexOut, out, 
 }
 
 if (isMain(import.meta.url)) {
-  const { out, id, accounting, wanted, diagnostics, obstructions, refused, refusalDetails } = await projectGlossaryFoamFromRoot(parseProjectGlossaryFoamArgs(process.argv.slice(2)));
-  process.stdout.write(`${JSON.stringify({ foam: id, ...accounting, wantedSigns: wanted, diagnostics, obstructions, refusedCarriers: refused })}\nwrote: ${out}\n`);
-  if (refused > 0) {
-    for (const item of refusalDetails) process.stderr.write(`refused: ${JSON.stringify(item)}\n`);
+  const { out, id, accounting, wanted, diagnostics, obstructions, refused: rejected, refusalDetails: rejectionDetails } = await projectGlossaryFoamFromRoot(parseProjectGlossaryFoamArgs(process.argv.slice(2)));
+  process.stdout.write(`${JSON.stringify({ foam: id, ...accounting, wantedSigns: wanted, diagnostics, obstructions, refusedCarriers: rejected })}\nwrote: ${out}\n`);
+  if (rejected > 0) {
+    for (const item of rejectionDetails) process.stderr.write(`refused: ${JSON.stringify(item)}\n`);
     process.exitCode = 1;
   }
 }

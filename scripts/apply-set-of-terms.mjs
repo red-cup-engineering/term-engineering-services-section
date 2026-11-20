@@ -51,19 +51,19 @@ async function createValidatedBackup(root, plan, backupDirectory) {
 
 async function restoreChanged(root, backup, changed) {
   const restored = [], failures = [];
-  for (const receipt of [...changed].reverse()) {
+  for (const record of [...changed].reverse()) {
     try {
-      const current = await readFile(confined(root, receipt.path), "utf8");
-      if (sha256Hex(current) !== receipt.afterSha256) throw new Error("current bytes drifted after operation write");
-      const entry = backup.manifest.entries.find(({ path }) => path === receipt.path);
+      const current = await readFile(confined(root, record.path), "utf8");
+      if (sha256Hex(current) !== record.afterSha256) throw new Error("current bytes drifted after operation write");
+      const entry = backup.manifest.entries.find(({ path }) => path === record.path);
       if (entry === undefined) throw new Error("backup entry missing");
-      const original = await readFile(confined(backup.directory, receipt.path), "utf8");
-      await writeMarkdownFile({ root, path: receipt.path, text: original, mode: "replace", normalization: "preserve", expectedRevision: markdownFileRevision(current) });
-      await chmod(confined(root, receipt.path), entry.mode);
-      if (sha256Hex(await readFile(confined(root, receipt.path))) !== entry.sha256) throw new Error("restored hash mismatch");
-      restored.push(receipt.path);
+      const original = await readFile(confined(backup.directory, record.path), "utf8");
+      await writeMarkdownFile({ root, path: record.path, text: original, mode: "replace", normalization: "preserve", expectedRevision: markdownFileRevision(current) });
+      await chmod(confined(root, record.path), entry.mode);
+      if (sha256Hex(await readFile(confined(root, record.path))) !== entry.sha256) throw new Error("restored hash mismatch");
+      restored.push(record.path);
     } catch (error) {
-      failures.push(Object.freeze({ path: receipt.path, reason: error.message }));
+      failures.push(Object.freeze({ path: record.path, reason: error.message }));
     }
   }
   return Object.freeze({ restored: Object.freeze(restored), failures: Object.freeze(failures) });
@@ -105,9 +105,9 @@ export async function applyMarkdownCorpusCleanupPlan({ root, documents, plan, ba
     for (const transaction of plan.transactions) {
       const output = prepared.get(transaction.path);
       if (output === undefined) continue;
-      let receipt;
+      let record;
       try {
-        receipt = await writeOperation({ root: repositoryRoot, path: transaction.path, text: output, mode: "replace", normalization: "preserve", expectedRevision: `sha256:${transaction.beforeSha256}` });
+        record = await writeOperation({ root: repositoryRoot, path: transaction.path, text: output, mode: "replace", normalization: "preserve", expectedRevision: `sha256:${transaction.beforeSha256}` });
       } catch (error) {
         if (error instanceof MarkdownFileRevisionConflict || error?.code === "ENOENT" || /does not exist/u.test(error?.message ?? "")) {
           let currentSha256 = null;
@@ -117,15 +117,15 @@ export async function applyMarkdownCorpusCleanupPlan({ root, documents, plan, ba
         }
         throw error;
       }
-      if (!receipt.changed) throw new Error(`admitted transaction made no change: ${transaction.path}`);
+      if (!record.changed) throw new Error(`admitted transaction made no change: ${transaction.path}`);
       const observed = await readFile(confined(repositoryRoot, transaction.path));
       if (sha256Hex(observed) !== transaction.proposedAfterSha256) throw new Error(`after hash mismatch: ${transaction.path}`);
       changed.push(Object.freeze({ path: transaction.path, beforeSha256: transaction.beforeSha256, afterSha256: transaction.proposedAfterSha256 }));
     }
     const changedPaths = new Set(changed.map(({ path }) => path));
     const driftedPaths = new Set(drifted.map(({ path }) => path));
-    const admittedPaths = plan.transactions.map(({ path }) => path).filter((path) => !driftedPaths.has(path));
-    if (changedPaths.size !== admittedPaths.length || admittedPaths.some((path) => !changedPaths.has(path))) throw new Error("changed path set does not equal admitted plan");
+    const validatedPaths = plan.transactions.map(({ path }) => path).filter((path) => !driftedPaths.has(path));
+    if (changedPaths.size !== validatedPaths.length || validatedPaths.some((path) => !changedPaths.has(path))) throw new Error("changed path set does not equal admitted plan");
     const unmentionedMismatches = [];
     for (const document of documents) {
       const classification = classifyMarkdownCorpusPath(document.relativePath, { ignored: document.ignored === true });
@@ -134,7 +134,7 @@ export async function applyMarkdownCorpusCleanupPlan({ root, documents, plan, ba
       const after = sha256Hex(await readFile(confined(repositoryRoot, document.relativePath)));
       if (before !== after) unmentionedMismatches.push(Object.freeze({ path: document.relativePath, beforeSha256: before, afterSha256: after }));
     }
-    return Object.freeze({ disposition: "applied", backup, counts: Object.freeze({ planned: plan.transactions.length, admitted: admittedPaths.length, drifted: drifted.length, changed: changed.length, unmentionedDrift: unmentionedMismatches.length }), changed: Object.freeze(changed), drifted: Object.freeze(drifted), unmentionedMismatches: Object.freeze(unmentionedMismatches), unchangedWitness: plan.unchangedWitness });
+    return Object.freeze({ disposition: "applied", backup, counts: Object.freeze({ planned: plan.transactions.length, admitted: validatedPaths.length, drifted: drifted.length, changed: changed.length, unmentionedDrift: unmentionedMismatches.length }), changed: Object.freeze(changed), drifted: Object.freeze(drifted), unmentionedMismatches: Object.freeze(unmentionedMismatches), unchangedWitness: plan.unchangedWitness });
   } catch (error) {
     const restoration = await restoreChanged(repositoryRoot, backup, changed);
     const failure = new Error(`cleanup apply failed and restoration was attempted: ${error.message}`);

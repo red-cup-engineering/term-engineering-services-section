@@ -18,12 +18,12 @@ export async function projectTermScienceSchema({ source, destination }, operatio
  * Both source documents are explicit inputs; there is no hidden filesystem,
  * registry, network call or second manually maintained term vocabulary.
  */
-export const TERM_ADMISSION_SCHEMA_ID = "https://561.group/ns/term-engineering/admitted-term/v1";
-const ADMISSION_TITLE = "Engineering-admitted glossary term";
-const ADMISSION_DESCRIPTION = "A bounded Engineering admission profile derived from the Science term record: the same source fields and assertion values, with a closed carrier field set and only source-declared relation predicates. This profile is not the scientific source type.";
-const ADMISSION_RELATION_DESCRIPTION = "An Engineering admission of Science term relations: the only legal keys are original source-owned relation predicates, whose ranges are declared as carrier or literal in relation-predicates.json.";
+export const TERM_VALIDATION_SCHEMA_ID = "https://561.group/ns/term-engineering/admitted-term/v1";
+const VALIDATION_TITLE = "Engineering-admitted glossary term";
+const VALIDATION_DESCRIPTION = "A bounded Engineering admission profile derived from the Science term record: the same source fields and assertion values, with a closed carrier field set and only source-declared relation predicates. This profile is not the scientific source type.";
+const VALIDATION_RELATION_DESCRIPTION = "An Engineering admission of Science term relations: the only legal keys are original source-owned relation predicates, whose ranges are declared as carrier or literal in relation-predicates.json.";
 
-export function deriveTermAdmissionSchema(scienceSchema, relationVocabulary) {
+export function deriveTermValidationSchema(scienceSchema, relationVocabulary) {
   if (scienceSchema?.$schema !== "https://json-schema.org/draft/2020-12/schema"
       || scienceSchema.$id !== "glossary/terms/term"
       || scienceSchema.type !== "object"
@@ -41,9 +41,9 @@ export function deriveTermAdmissionSchema(scienceSchema, relationVocabulary) {
     throw new TypeError("each original relation predicate must have a valid name and declared carrier/literal range");
   }
   const schema = JSON.parse(JSON.stringify(scienceSchema));
-  schema.$id = TERM_ADMISSION_SCHEMA_ID;
-  schema.title = ADMISSION_TITLE;
-  schema.description = ADMISSION_DESCRIPTION;
+  schema.$id = TERM_VALIDATION_SCHEMA_ID;
+  schema.title = VALIDATION_TITLE;
+  schema.description = VALIDATION_DESCRIPTION;
   schema.additionalProperties = false;
   // The original Science identity pattern also constrains Engineering's carrier-range
   // relation objects. Before this, an admitted "composed-of: Actor + Character"
@@ -69,21 +69,21 @@ export function deriveTermAdmissionSchema(scienceSchema, relationVocabulary) {
     predicates.map(([name, spec]) => [name, relationValues(spec)]),
   );
   schema.properties.relations.additionalProperties = false;
-  schema.properties.relations.description = ADMISSION_RELATION_DESCRIPTION;
+  schema.properties.relations.description = VALIDATION_RELATION_DESCRIPTION;
   return Object.freeze(schema);
 }
 
 /** Project the independent Engineering admission profile from exact caller-selected
  * Science schema and original predicate vocabulary source bytes. The caller is
  * responsible for qualifying both authoritative source revisions beforehand. */
-export async function projectTermAdmissionSchema({ source, vocabulary, destination }, operations = {}) {
+export async function projectTermValidationSchema({ source, vocabulary, destination }, operations = {}) {
   if (![source, vocabulary, destination].every((item) => typeof item === "string" && item.length > 0)) {
     throw new TypeError("source, vocabulary and destination are required");
   }
   const read = operations.read ?? readFileSync;
   const science = JSON.parse(read(source, "utf8"));
   const predicates = JSON.parse(read(vocabulary, "utf8"));
-  const schema = deriveTermAdmissionSchema(science, predicates);
+  const schema = deriveTermValidationSchema(science, predicates);
   const bytes = `${JSON.stringify(schema, null, 2)}\n`;
   await (operations.write ?? writeFileText)(destination, bytes);
   return Object.freeze({ source, vocabulary, destination, bytes });

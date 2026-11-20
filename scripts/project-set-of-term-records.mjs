@@ -49,7 +49,7 @@ if (isMain(import.meta.url)) {
   const { out, index } = await projectSetOfTermRecords(options);
   process.stdout.write(`records: ${index.records.length}  refused: ${index.refused.length}\nwrote: ${out}\n`);
   if (index.refused.length > 0) {
-    for (const refused of index.refused) process.stderr.write(`refused: ${JSON.stringify(refused)}\n`);
+    for (const rejected of index.refused) process.stderr.write(`refused: ${JSON.stringify(rejected)}\n`);
     process.exitCode = 1;
   }
 }

@@ -62,15 +62,15 @@ export function projectGlossarySkos(index, { base = DEFAULT_KNOWLEDGE_BASE, audi
   if (typeof base !== "string" || !/^https?:\/\/.+\/$/u.test(base)) throw new TypeError("base must be an http(s) IRI ending in /");
   if (!GLOSSARY_AUDIENCES.includes(audience)) throw new TypeError(`audience must be one of ${GLOSSARY_AUDIENCES.join(", ")}`);
   const placed = index.records.filter((record) => typeof record.scheme === "string");
-  const admitted = placed.filter((record) => glossaryAudienceAdmits(record, audience));
+  const validated = placed.filter((record) => glossaryAudienceAdmits(record, audience));
   // A term and a topic of one identity in one scheme are one concept (one IRI, one token): publish the first, count the rest.
   const seen = new Set();
-  const records = admitted.filter((record) => { const key = `${record.scheme}\u0000${record.identity}`; if (seen.has(key)) return false; seen.add(key); return true; });
+  const records = validated.filter((record) => { const key = `${record.scheme}\u0000${record.identity}`; if (seen.has(key)) return false; seen.add(key); return true; });
   const schemes = [...new Set(records.map((record) => record.scheme))].sort();
   const schemeIri = (scheme) => `${base}${schemeIriPath(scheme)}`;
   const conceptIri = (record) => `${schemeIri(record.scheme)}/${record.identity}`;
   const nearest = createNearestSchemeResolver(records);
-  const accounting = { concepts: records.length, schemes: schemes.length, withheld: placed.length - admitted.length, refiledConcepts: admitted.length - records.length, relations: 0, unresolvedRelations: 0 };
+  const accounting = { concepts: records.length, schemes: schemes.length, withheld: placed.length - validated.length, refiledConcepts: validated.length - records.length, relations: 0, unresolvedRelations: 0 };
 
   /** The concept a carrier-range assertion names, resolved to the nearest projected scheme (`createNearestSchemeResolver`). */
   function resolve(from, identity) {
