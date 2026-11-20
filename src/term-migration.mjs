@@ -85,7 +85,10 @@ export function planTermMigration(sources, { convertOrgToGfm, relationKeysBySour
       : relationKeysBySource[source.relativePath] ?? [];
     const relations = Object.fromEntries(authorizedRelationKeys.filter((key) => Object.hasOwn(view.metadata, key)).map((key) => [key, view.metadata[key]]));
     const identity = basename(filename, ".md");
-    const legacy = migrateLegacyTermMarkdown({ text: source.text, filename: `${basename(source.relativePath, extname(source.relativePath))}.md` }).record;
+    // The recognizer returns diagnostics beside the admitted term. They are
+    // not fields of the canonical term rendered into the new carrier.
+    const { term: _term, admitted: _admitted, kind: _kind, findings: _findings, ...legacy } =
+      migrateLegacyTermMarkdown({ text: source.text, filename: `${basename(source.relativePath, extname(source.relativePath))}.md` }).record;
     const markdown = renderTermMarkdown({ ...legacy, identity, name, aliases, description, relations, body }, { authorizedRelationKeys });
     return { source: source.relativePath, sourceSha256: sha256Hex(source.text), sourceFormat: view.format, output: filename, outputSha256: sha256Hex(markdown), markdown, disposition: "requires-semantic-admission" };
   });
