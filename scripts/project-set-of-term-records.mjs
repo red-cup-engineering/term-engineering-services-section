@@ -12,14 +12,15 @@ const argument = (flag, argv = process.argv.slice(2)) => { const at = argv.index
 export { projectGlossaryIndex } from "../src/glossary-index.mjs";
 
 /**
- * Parse `--root <dir> --out <file.json>`.
+ * Parse `--root <dir> [--section-path <aggregate-relative mount>] --out <file.json>`.
  * @param {string[]} argv
- * @returns {{root: string, out: string}}
+ * @returns {{root: string, sectionPath: string, out: string}}
  */
 export function parseProjectSetOfTermRecordsArgs(argv) {
-  const options = { root: argument("--root", argv), out: argument("--out", argv) };
+  const options = { root: argument("--root", argv), sectionPath: argument("--section-path", argv) ?? "", out: argument("--out", argv) };
   if (typeof options.root !== "string" || options.root === "") throw new TypeError("--root is required");
   if (typeof options.out !== "string" || options.out === "") throw new TypeError("--out is required");
+  if (argv.includes("--section-path") && !options.sectionPath) throw new TypeError("--section-path requires a mount path");
   return options;
 }
 
@@ -27,10 +28,10 @@ export function parseProjectSetOfTermRecordsArgs(argv) {
  * Walk `root` for glossary term Markdown carriers (excluding legacy/triage/node_modules/dist),
  * read each through the house file-read service, project the glossary index, and write it as
  * 2-space JSON with a trailing newline to `out`.
- * @param {{root: string, out: string}} options
+ * @param {{root: string, sectionPath: string, out: string}} options
  * @returns {Promise<{root: string, out: string, index: ReturnType<typeof projectGlossaryIndex>}>}
  */
-export async function projectSetOfTermRecords({ root, out }) {
+export async function projectSetOfTermRecords({ root, sectionPath, out }) {
   const absoluteRoot = confinePath({ root }).path;
   const paths = findGlossaryTermMarkdownPaths(absoluteRoot);
   const documents = [];
@@ -39,7 +40,7 @@ export async function projectSetOfTermRecords({ root, out }) {
     const relativePath = confinePath({ root: absoluteRoot, path }).relativePath;
     documents.push({ path: relativePath, filename: relativePath.split("/").pop(), text });
   }
-  const index = projectGlossaryIndex({ root: absoluteRoot, documents });
+  const index = projectGlossaryIndex({ root: absoluteRoot, sectionPath, documents });
   await writeFileText(out, `${JSON.stringify(index, null, 2)}\n`);
   return { root: absoluteRoot, out, index };
 }

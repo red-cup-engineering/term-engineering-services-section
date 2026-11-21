@@ -37,7 +37,8 @@
     "src/",
     "scripts/",
     "schemas/",
-    "test/term-migration-receiving.test.mjs"
+    "test/term-migration-receiving.test.mjs",
+    "test/glossary-section-receiving.test.mjs"
   ],
   "scripts": {
     "check": "node --check src/*.mjs && node --check scripts/*.mjs && node --check apps/*.mjs && node --check schemas/glossary/term/*.mjs",
@@ -65,6 +66,7 @@
     "url": "https://github.com/561-group/.github/blob/main/TIPS.md"
   },
   "receivingTests": [
-    "test/term-migration-receiving.test.mjs"
+    "test/term-migration-receiving.test.mjs",
+    "test/glossary-section-receiving.test.mjs"
   ]
 }

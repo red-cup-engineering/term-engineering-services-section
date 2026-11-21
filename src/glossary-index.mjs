@@ -91,12 +91,12 @@ function nonEmpty(value) {
  * @param {string} section
  * @returns {Readonly<object>}
  */
-function projectRecord(recognized, path, section) {
+function projectRecord(recognized, path, section, scheme) {
   const record = {};
   for (const field of RECORD_FIELDS) if (nonEmpty(recognized[field]) || field === "identity" || field === "name" || field === "body") record[field] = recognized[field];
   record.path = path;
   record.section = section;
-  record.scheme = schemeOf(path);
+  record.scheme = scheme;
   record.facet = facetOf(path);
   record.token = glossaryConceptId(record.scheme, record.identity);
   return Object.freeze(record);
@@ -128,27 +128,34 @@ export function createNearestSchemeResolver(records) {
   };
 }
 
+const SECTION_MOUNT = /^(?:services\/[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)(?:\/services\/[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*$/u;
+
 /**
  * Project a deterministic glossary index from a set of already-read Markdown documents. Pure:
  * no filesystem access, so it runs equally in a Node script or a fetch-handler (edge) isolate.
  * Re-derivation from the same documents is byte-identical (no timestamps, records sorted by
  * identity then path).
- * @param {{root: string, documents: Array<{path: string, filename: string, text: string}>}} input
- *   `documents[].path` is relative to `root`.
- * @returns {Readonly<{schema: string, root: string, records: readonly object[], refused: readonly object[]}>}
+ * @param {{root: string, sectionPath?: string, documents: Array<{path: string, filename: string, text: string}>}} input
+ *   `documents[].path` is relative to the physical `root`. A detached section
+ *   supplies the verified `sectionPath` where it is mounted in the aggregate.
+ *   The empty value means the physical root already is the index aggregate.
+ * @returns {Readonly<{schema: string, root: string, sectionPath: string, records: readonly object[], refused: readonly object[]}>}
  */
-export function projectGlossaryIndex({ root, documents } = {}) {
+export function projectGlossaryIndex({ root, sectionPath = "", documents } = {}) {
   if (typeof root !== "string" || root.trim() === "") throw new TypeError("root must be a nonempty string");
+  if (typeof sectionPath !== "string" || sectionPath !== "" && !SECTION_MOUNT.test(sectionPath))
+    throw new TypeError("sectionPath must be an exact aggregate-relative services mount path");
   if (!Array.isArray(documents)) throw new TypeError("documents must be an array");
   const records = [];
   const refused = [];
   for (const { path, filename, text } of documents) {
     const recognized = recognizeTermMarkdown({ text, filename });
     if (!recognized.admitted) { refused.push(Object.freeze({ path, findings: recognized.findings })); continue; }
-    records.push(projectRecord(recognized, path, subsectionOf(root, path)));
+    const aggregatePath = sectionPath ? sectionPath + "/" + path : path;
+    records.push(projectRecord(recognized, path, subsectionOf(root, aggregatePath), schemeOf(aggregatePath)));
   }
   records.sort((left, right) => left.identity.localeCompare(right.identity) || left.path.localeCompare(right.path));
-  return Object.freeze({ schema: SCHEMA, root, records: Object.freeze(records), refused: Object.freeze(refused) });
+  return Object.freeze({ schema: SCHEMA, root, sectionPath, records: Object.freeze(records), refused: Object.freeze(refused) });
 }
 
 function carrierRelationEntries(record) {

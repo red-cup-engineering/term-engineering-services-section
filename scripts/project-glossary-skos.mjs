@@ -8,13 +8,14 @@ import { DEFAULT_KNOWLEDGE_BASE, projectGlossarySkos } from "../src/glossary-sko
 const argument = (flag, argv = process.argv.slice(2)) => { const at = argv.indexOf(flag); return at >= 0 && at + 1 < argv.length ? argv[at + 1] : undefined; };
 
 /**
- * Parse `--root <dir> --index <file.json> --out <file.jsonld> [--base <iri/>] [--audience public|authenticated]`.
+ * Parse `--root <dir> [--section-path <aggregate-relative mount>] --index <file.json> --out <file.jsonld> [--base <iri/>] [--audience public|authenticated]`.
  * @param {string[]} argv
- * @returns {{root: string, index: string, out: string, base: string, audience: string}}
+ * @returns {{root: string, sectionPath: string, index: string, out: string, base: string, audience: string}}
  */
 export function parseProjectGlossarySkosArgs(argv) {
-  const options = { root: argument("--root", argv), index: argument("--index", argv), out: argument("--out", argv), base: argument("--base", argv) ?? DEFAULT_KNOWLEDGE_BASE, audience: argument("--audience", argv) ?? "public" };
+  const options = { root: argument("--root", argv), sectionPath: argument("--section-path", argv) ?? "", index: argument("--index", argv), out: argument("--out", argv), base: argument("--base", argv) ?? DEFAULT_KNOWLEDGE_BASE, audience: argument("--audience", argv) ?? "public" };
   for (const flag of ["root", "index", "out"]) if (typeof options[flag] !== "string" || options[flag] === "") throw new TypeError(`--${flag} is required`);
+  if (argv.includes("--section-path") && !options.sectionPath) throw new TypeError("--section-path requires a mount path");
   return options;
 }
 
@@ -23,8 +24,8 @@ export function parseProjectGlossarySkosArgs(argv) {
  * `audience` may see as one SKOS vocabulary in JSON-LD (written to `out`).
  * @param {ReturnType<typeof parseProjectGlossarySkosArgs>} options
  */
-export async function projectGlossarySkosFromRoot({ root, index: indexOut, out, base, audience }) {
-  const { index } = await projectSetOfTermRecords({ root, out: indexOut });
+export async function projectGlossarySkosFromRoot({ root, sectionPath, index: indexOut, out, base, audience }) {
+  const { index } = await projectSetOfTermRecords({ root, sectionPath, out: indexOut });
   const skos = projectGlossarySkos(index, { base, audience });
   await writeFileText(out, `${JSON.stringify(skos, null, 1)}\n`);
   return { out, accounting: skos.accounting, refused: index.refused.length, refusalDetails: index.refused };
