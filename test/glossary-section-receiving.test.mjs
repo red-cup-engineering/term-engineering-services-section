@@ -7,8 +7,8 @@ import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 import { createGlossaryIndexReader, projectGlossaryIndex } from "@red-cup-engineering/term-engineering-services-section/glossary-index";
 import { projectGlossarySkos } from "@red-cup-engineering/term-engineering-services-section/glossary-skos";
-import { admitSemanticEvidence } from "@red-cup-engineering/term-engineering-services-section/term-operations";
-import { observeTermRelations, readTermMarkdown, recognizeTermDocument, renderTermMarkdown }
+import { admitSemanticEvidence, writeTerm } from "@red-cup-engineering/term-engineering-services-section/term-operations";
+import { observeTermRelations, readTermMarkdown, recognizeTermDocument, recognizeTermMarkdown, renderTermMarkdown }
   from "@red-cup-engineering/term-engineering-services-section/term-carrier";
 
 const SOURCE = "content/text/glossary/concepts/structure.md";
@@ -119,4 +119,72 @@ test("refused relations retain both conflicting declarations and exact historica
     { key: "folk-predicate", raw: "nested prose", placement: "relations", range: null, admittedValue: null },
     { key: "produces", raw: "evidence", placement: "frontmatter", range: "carrier", admittedValue: null },
   ]);
+});
+
+const traceSiteHeader = "---\nidentity: trace-site\nname: Trace site\n---\n\n";
+const traceSiteBody = [
+  "A trace site is a category of traces with a specified topology of covers.",
+  "The site is distinct from its category of sheaves.",
+  "Each smaller component of a prefix lies in a unique ambient component.",
+  "Thus each restriction selects an ambient section unambiguously.",
+].join("\n\n");
+
+test("substantive Trace Site prose survives strict Term carrier admission", () => {
+  const text = traceSiteHeader + traceSiteBody + "\n";
+  const parsed = readTermMarkdown(text);
+  const record = recognizeTermDocument({ ...parsed, filename: "trace-site.md" });
+  assert.equal(record.admitted, true);
+  assert.equal(record.identity, "trace-site");
+  assert.equal(record.body, traceSiteBody);
+  assert.deepEqual(record.findings, []);
+});
+
+test("strict Term admission still rejects empty bodies and invalid frontmatter", () => {
+  const filename = "trace-site.md";
+  for (const body of ["", " \t\n\n"]) {
+    const result = recognizeTermMarkdown({ text: traceSiteHeader + body, filename });
+    assert.equal(result.admitted, false);
+    assert.ok(result.findings.some(({ rule }) => rule === "record"));
+  }
+  const malformed = recognizeTermMarkdown({
+    text: traceSiteHeader.replace("name: Trace site", "name: [Trace site") + traceSiteBody, filename,
+  });
+  assert.equal(malformed.admitted, false);
+  assert.ok(malformed.findings.some(({ rule }) => rule === "markdown"));
+  const undeclared = recognizeTermMarkdown({
+    text: traceSiteHeader.replace("name: Trace site", "name: Trace site\nundeclared-field: x") + traceSiteBody, filename,
+  });
+  assert.equal(undeclared.admitted, false);
+  assert.ok(undeclared.findings.some(({ rule }) => rule === "unknown-key"));
+});
+
+test("the writer requires source and claim evidence before invoking its write operation", async () => {
+  const claims = {
+    definition: "A trace site is a category of traces with a specified topology of covers.",
+    distinction: "The site is distinct from its category of sheaves.",
+    consequence: "Thus each restriction selects an ambient section unambiguously.",
+  };
+  const sources = ["https://example.org/source"];
+  const term = { filename: "trace-site.md", identity: "trace-site", name: "Trace site", body: traceSiteBody };
+  const writes = [];
+  const operations = {
+    sourceExists: () => false,
+    exists: () => false,
+    write: async (...args) => writes.push(args),
+  };
+  for (const [semanticEvidence, error] of [
+    [undefined, /semanticEvidence is required/u],
+    [{ sources: [], claims }, /semanticEvidence\.sources/u],
+    [{ sources: [join(tmpdir(), "missing-term-evidence.md")], claims }, /source does not exist/u],
+    [{ sources, claims: { ...claims, distinction: "" } }, /claims\.distinction is required/u],
+    [{ sources, claims: { ...claims, consequence: "Not in the body." } }, /claims\.consequence is not witnessed/u],
+  ]) {
+    await assert.rejects(writeTerm({ termDirectory: tmpdir(), term, semanticEvidence }, operations), error);
+  }
+  assert.deepEqual(writes, []);
+
+  const result = await writeTerm({ termDirectory: tmpdir(), term, semanticEvidence: { sources, claims } }, operations);
+  assert.equal(result.admitted.identity, "trace-site");
+  assert.equal(writes.length, 1);
+  assert.equal(readTermMarkdown(writes[0][1]).body.trim(), traceSiteBody);
 });
