@@ -66,6 +66,52 @@ function relationAuthority(value = AUTHORIZED_RELATION_PREDICATES) {
   const globallyAuthorized = new Set(AUTHORIZED_RELATION_PREDICATES);
   return new Set([...value].filter((key) => globallyAuthorized.has(key)));
 }
+// Admission and observation use the same predicate discovery, but do not
+// collapse source evidence or silently choose a conflicting declaration.
+function* relationDeclarations(metadata, authority) {
+  for (const [key, value] of Object.entries(metadata.relations ?? {}))
+    yield { key, value, placement: "relations" };
+  for (const [key, value] of Object.entries(metadata)) {
+    if (key === "relations" || TERM_KEYS.includes(key) || CARRIER_METADATA_KEYS.includes(key) || !authority.has(key)) continue;
+    yield { key, value, placement: "frontmatter" };
+  }
+}
+
+/**
+ * Observe relation strings in an already parsed Term carrier. Preserve raw
+ * spelling, declaration placement and list order, even when strict admission
+ * refuses the carrier. An unknown nested predicate is evidence, not authority.
+ * Pass only the normalized relations of a separately admitted Term record;
+ * without them no observation matches admission. This does not resolve a
+ * target, grant access or merge reviewed source claims.
+ *
+ * @param {{frontmatter?: Record<string, unknown>, admittedRelations?: Record<string, string|string[]>}} input
+ * @returns {ReadonlyArray<Readonly<{key: string, raw: string, placement: string, range: "carrier"|"literal"|null, admittedValue: string|null}>>}
+ */
+export function observeTermRelations({ frontmatter = {}, admittedRelations = {} } = {}) {
+  const authority = relationAuthority();
+  const observations = [];
+  for (const { key, value, placement } of relationDeclarations(frontmatter ?? {}, authority)) {
+    const range = authority.has(key) ? relationPredicateRange(key) : null;
+    const held = Object.hasOwn(admittedRelations, key) ? admittedRelations[key] : undefined;
+    const admitted = Array.isArray(held) ? held : [held];
+    for (const raw of Array.isArray(value) ? value : [value]) {
+      if (typeof raw !== "string") continue;
+      let admittedValue = null;
+      if (range && held !== undefined) {
+        try {
+          const candidate = line(raw, `relation ${key}`);
+          if (admitted.includes(candidate)) admittedValue = candidate;
+        } catch {
+          // A noncanonical string is still source evidence.
+        }
+      }
+      observations.push(Object.freeze({ key, raw, placement, range, admittedValue }));
+    }
+  }
+  return Object.freeze(observations);
+}
+
 function normalizeRelationValue(value, key) {
   const values = Array.isArray(value) ? value : [value];
   if (!values.length) throw new TypeError(`relation ${key} must have an assertion`);
@@ -169,12 +215,12 @@ function foldCarrierMetadata(metadata, findings) {
  */
 function foldTopLevelRelations(metadata, authority, findings) {
   const relations = {};
-  for (const [key, value] of Object.entries(metadata.relations ?? {})) if (value !== null && value !== undefined) relations[key] = value;
-  for (const key of Object.keys(metadata)) {
-    if (key === "relations" || TERM_KEYS.includes(key) || CARRIER_METADATA_KEYS.includes(key) || !authority.has(key)) continue;
-    const value = metadata[key];
+  for (const { key, value, placement } of relationDeclarations(metadata, authority)) {
     if (value === null || value === undefined) continue;
-    if (Object.hasOwn(relations, key) && JSON.stringify(relations[key]) !== JSON.stringify(value)) { findings.push(finding("relation-conflict", `top-level ${key} conflicts with relations.${key}`)); continue; }
+    if (placement === "frontmatter" && Object.hasOwn(relations, key) && JSON.stringify(relations[key]) !== JSON.stringify(value)) {
+      findings.push(finding("relation-conflict", `top-level ${key} conflicts with relations.${key}`));
+      continue;
+    }
     relations[key] = value;
   }
   return relations;

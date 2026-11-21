@@ -136,6 +136,16 @@ Nodes come from the data layer's shared builders (`definedTermJsonLd`, `definedT
 
 `recognizeTermDocument({ frontmatter, body, filename })` is the recognition path for a carrier some other reader already parsed (a vault room, say); `recognizeTermMarkdown` parses and delegates to it.
 
+Use `observeTermRelations({ frontmatter, admittedRelations })` from
+`./term-carrier` to read the original relation strings of an already parsed
+carrier, including a refused one. It preserves nested and top-level placement,
+verbatim strings and their order, including repetitions. When two declarations
+conflict, both are observable; strict recognition still refuses the carrier.
+An unknown nested field has no declared range. Pass normalized `relations`
+only from the admitted record for this carrier; the returned
+`admittedValue` is then the normalized match, or `null`. An observation does
+not resolve its target or authorize a source claim.
+
 ### Multiscript lexical recovery and source concept identity (candidate)
 
 The glossary reader consumes the original Computer Text `segmentSearchWords` (UAX #29 / `Intl.Segmenter('und')`, candidate 0.1.1-dev.0) rather than an ASCII-only local regex. This is a *search ranking projection*, not a new tokenizer owner: native SignCell scheme-qualified concept addresses, authored aliases, original definitions, witness-bearing SignGraph claims and per-Actor source authorization remain unchanged. Full Chinese, Arabic, accented and other Unicode words can enter lexical retrieval; source-owned SKOS alternative labels are the only valid grounds for cross-language association, not similarity of tokens. ICU version/tailoring, supplier publication, source-local Node suite, and original CAIRN/MetroPlat receiver admission remain qualification requirements. Source candidate term version: 0.3.3-dev.0, not an installed release.

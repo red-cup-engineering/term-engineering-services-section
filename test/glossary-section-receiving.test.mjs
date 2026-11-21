@@ -7,6 +7,8 @@ import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 import { createGlossaryIndexReader, projectGlossaryIndex } from "@red-cup-engineering/term-engineering-services-section/glossary-index";
 import { projectGlossarySkos } from "@red-cup-engineering/term-engineering-services-section/glossary-skos";
+import { observeTermRelations, readTermMarkdown, recognizeTermDocument }
+  from "@red-cup-engineering/term-engineering-services-section/term-carrier";
 
 const SOURCE = "content/text/glossary/concepts/structure.md";
 const first = "services/philosophy-science-services-section/services/relationality-science-services-section";
@@ -61,4 +63,42 @@ test("shipped native index, SKOS and foam commands keep the verified detached mo
   const cut=JSON.parse(readFileSync(foam));
   assert.equal(cut.accounting.concepts,1);
   assert.equal(JSON.parse(readFileSync(index)).records[0].token,native.records[0].token);
+});
+
+test("the installed Term carrier shares original relation declarations with strict admission", () => {
+  const input = note("Structure");
+  const text = input.text.replace("type: concept\n", 'type: concept\nrequires: [" evidence-record ", question, question]\nautonomy: "  finite  operation  "\n');
+  const parsed = readTermMarkdown(text);
+  const record = projectGlossaryIndex({ root: "science-root", documents: [{ ...input, text }] }).records[0];
+  assert.deepEqual(record.relations.requires, ["evidence-record", "question"]);
+  const rows = observeTermRelations({ frontmatter: parsed.frontmatter, admittedRelations: record.relations });
+  assert.deepEqual(rows, [
+    { key: "requires", raw: " evidence-record ", placement: "frontmatter", range: "carrier", admittedValue: "evidence-record" },
+    { key: "requires", raw: "question", placement: "frontmatter", range: "carrier", admittedValue: "question" },
+    { key: "requires", raw: "question", placement: "frontmatter", range: "carrier", admittedValue: "question" },
+    { key: "autonomy", raw: "  finite  operation  ", placement: "frontmatter", range: "literal", admittedValue: "finite operation" },
+  ]);
+  assert.equal(Object.isFrozen(rows), true);
+  assert.ok(rows.every(Object.isFrozen));
+});
+
+test("refused relations retain both conflicting declarations and exact historical spellings", () => {
+  const text = note("Structure").text.replace("type: concept\n", [
+    "type: concept",
+    "relations:",
+    '  produces: "[[differential accumulation function]]"',
+    '  folk-predicate: ["nested prose", 42]',
+    "produces: evidence",
+    "another-unknown-key: unrelated text",
+    "",
+  ].join("\n"));
+  const parsed = readTermMarkdown(text);
+  const refused = recognizeTermDocument({ ...parsed, filename: "structure.md" });
+  assert.equal(refused.admitted, false);
+  assert.ok(refused.findings.some(({ rule }) => rule === "relation-conflict"));
+  assert.deepEqual(observeTermRelations({ frontmatter: parsed.frontmatter }), [
+    { key: "produces", raw: "[[differential accumulation function]]", placement: "relations", range: "carrier", admittedValue: null },
+    { key: "folk-predicate", raw: "nested prose", placement: "relations", range: null, admittedValue: null },
+    { key: "produces", raw: "evidence", placement: "frontmatter", range: "carrier", admittedValue: null },
+  ]);
 });
