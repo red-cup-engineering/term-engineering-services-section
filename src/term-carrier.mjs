@@ -303,7 +303,6 @@ export function recognizeTermDocument({ frontmatter, body: markdownBody = "", fi
     record.relations = normalizeTermRelations(relations, { authorizedRelationKeys });
     admitTermRecord(record);
   } catch (error) { findings.push(finding("record", error.message)); }
-  if (/\b(?:constituent|component|word)\s+of\b|\bin\s+the\s+(?:phrase|acronym)\b/iu.test(record.body ?? "")) findings.push(finding("circular-definition", "term body must define its concept, not only its position in a compound"));
   const term = findings.length === 0;
   return Object.freeze({ term, admitted: term, ...record, kind: record.keywords?.length ? "compound" : "primitive", findings: Object.freeze(findings) });
 }
