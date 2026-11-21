@@ -18,6 +18,7 @@ on:
       - 'test/glossary-projection-refusal.test.mjs'
       - '.github/workflows/changed-glossary-admission.yml'
       - 'package.json'
+      - 'package-lock.json'
   push:
     branches: [main]
     paths:
@@ -37,6 +38,7 @@ on:
       - 'test/glossary-projection-refusal.test.mjs'
       - '.github/workflows/changed-glossary-admission.yml'
       - 'package.json'
+      - 'package-lock.json'
   workflow_dispatch:
 permissions:
   contents: read
@@ -80,9 +82,10 @@ jobs:
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with:
           node-version: '24'
-      - name: Install original pinned Group dependencies
-        run: npm install --no-audit --no-fund --ignore-scripts --fetch-retries=0 --fetch-timeout=30000
+      - name: Install the frozen Group dependency graph
+        run: npm ci --no-audit --no-fund --ignore-scripts --fetch-retries=0 --fetch-timeout=30000
       - name: Execute complete original native Term Engineering checks
         run: |
           npm run check
           npm test
+          git diff --exit-code HEAD -- package.json package-lock.json
