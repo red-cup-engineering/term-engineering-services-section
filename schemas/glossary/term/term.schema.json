@@ -42,7 +42,7 @@
         "public",
         "authenticated"
       ],
-      "description": "Which publication surface may carry the term, under the house surface policy: \"public\" opts the term into the anonymous surface (the public glossary vocabulary, the knowledge garden's public tree); absent or \"authenticated\" keeps it to signed-in readers. Only the term's own carrier can open it to the public."
+      "description": "Which publication surface may carry the term, under the group surface policy: \"public\" opts the term into the anonymous surface (the public glossary vocabulary, the knowledge garden's public tree); absent or \"authenticated\" keeps it to signed-in readers. Only the term's own carrier can open it to the public."
     },
     "type": {
       "type": "string",
@@ -190,9 +190,35 @@
           "type": "array",
           "uniqueItems": true,
           "items": {
-            "type": "string",
-            "minLength": 1
-          }
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "object",
+                "required": [
+                  "path"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "pattern": "^(?![A-Za-z][A-Za-z0-9+.-]*:)(?!\\s)(?!.*\\s(?:$))(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/\\\\\\u0000-\\u001f\\u007f]+(?:/[^/\\\\\\u0000-\\u001f\\u007f]+)*(?![\\s\\S])",
+                    "description": "The author's exact root-relative POSIX locator. Custody and resolution are separate checks; this does not assign a repository or create an IRI."
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date",
+                    "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+                    "description": "The optional date carried by the original citation, not a date of verified retrieval."
+                  }
+                }
+              }
+            ]
+          },
+          "description": "Ordered authored citations: a nonempty citation string, or an exact root-relative locator with its optional original date. A relative locator is retained as evidence without claiming that it resolves to an independently verified source."
         },
         "authors": {
           "type": "array",

@@ -7,7 +7,8 @@ import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 import { createGlossaryIndexReader, projectGlossaryIndex } from "@red-cup-engineering/term-engineering-services-section/glossary-index";
 import { projectGlossarySkos } from "@red-cup-engineering/term-engineering-services-section/glossary-skos";
-import { observeTermRelations, readTermMarkdown, recognizeTermDocument }
+import { admitSemanticEvidence } from "@red-cup-engineering/term-engineering-services-section/term-operations";
+import { observeTermRelations, readTermMarkdown, recognizeTermDocument, renderTermMarkdown }
   from "@red-cup-engineering/term-engineering-services-section/term-carrier";
 
 const SOURCE = "content/text/glossary/concepts/structure.md";
@@ -40,6 +41,23 @@ test("refuse traversal, strings that name other repositories, and partial mount 
   for(const sectionPath of ["/services/science","services/../science","science","services/science/notes","services/science/","https://github.com/acme/science"]){
     assert.throws(()=>projectGlossaryIndex({root:"fixture",sectionPath,documents:[note("Structure")]}),/exact aggregate-relative/);
   }
+});
+
+test("structured provenance survives Term carrier and index without acquiring a concept identity", () => {
+  const sources = ["https://example.org/authored", { path: "notes/unresolved-α.md", date: "2024-02-29" }];
+  const input = note("Structure");
+  const text = renderTermMarkdown({ identity: "structure", name: "Structure", body: "A source definition.",
+    provenance: { sources } });
+  assert.deepEqual(readTermMarkdown(text).frontmatter.provenance.sources, sources);
+  const index = projectGlossaryIndex({ root: "fixture", sectionPath: first, documents: [{ ...input, text }] });
+  assert.deepEqual(index.records[0].provenance.sources, sources);
+  const skos = projectGlossarySkos(index, { audience: "authenticated" });
+  assert.equal(skos.accounting.concepts, 1);
+  assert.doesNotMatch(JSON.stringify(skos["@graph"]), /unresolved-α|2024-02-29/u);
+  const body = "A definition. A distinction. A consequence.";
+  const claims = { definition: "A definition.", distinction: "A distinction.", consequence: "A consequence." };
+  assert.throws(() => admitSemanticEvidence({ sources, claims }, body), /semanticEvidence\.sources/u);
+  assert.doesNotThrow(() => admitSemanticEvidence({ sources: [sources[0]], claims }, body));
 });
 
 test("shipped native index, SKOS and foam commands keep the verified detached mount",t=>{
