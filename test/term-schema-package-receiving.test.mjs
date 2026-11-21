@@ -85,6 +85,33 @@ test("the real npm-packed term schema admits its original vocabulary in a separa
     assert.equal(Object.values(vocabulary).filter((x) => x.range === "literal").length, 13);
     const source = { identity: "model", name: "Model", body: "A source-qualified abstraction.", relations: { "acts-on": "system", symbol: "λ" } };
     assert.equal(admitTermRecord(source), source);
+    assert.deepEqual(engineeringProfile.properties.provenance.properties.sources,
+      scienceSchema.properties.provenance.properties.sources);
+    const sources = ["https://example.org/record", "[cite:@record2024]", { path: "notes/primary.md", date: "2024-02-29" },
+      { path: "notes/primary.md" }, { path: "notes/primary.md", date: "2024-03-01" }, { path: "notes/比 較.md" }];
+    assert.deepEqual(admitTermRecord({ ...source, provenance: { sources } }).provenance.sources, sources);
+    const malformed = [
+      ["", "blank string"], [42, "non-text primitive"], [null, "null record"], [[], "array record"],
+      [{}, "missing path"], [{ path: "", date: "2024-02-29" }, "empty path"],
+      [{ path: "/notes/x.md" }, "absolute path"], [{ path: "notes/../x.md" }, "parent segment"],
+      [{ path: "./notes/x.md" }, "dot segment"], [{ path: "notes//x.md" }, "empty segment"],
+      [{ path: "notes/x.md/" }, "trailing slash"], [{ path: "notes\\x.md" }, "backslash"],
+      [{ path: " notes/x.md" }, "initial space"], [{ path: "notes/x.md " }, "final space"],
+      [{ path: "notes/x\t.md" }, "control"], [{ path: "notes/\uD800.md" }, "unpaired surrogate"],
+      [{ path: "https://example.org" }, "IRI belongs in string representation"],
+      [{ path: "urn:example:x" }, "URI-like locator"],
+      [{ path: "notes/x.md", date: "0000-01-01" }, "out-of-range calendar year"],
+      [{ path: "notes/x.md", date: "2023-02-29" }, "nonexistent leap day"],
+      [{ path: "notes/x.md", date: "2024-02-30" }, "nonexistent day"],
+      [{ path: "notes/x.md", date: "2024-2-9" }, "noncanonical date"],
+      [{ path: "notes/x.md", date: null }, "null date"], [{ path: "notes/x.md", date: undefined }, "undefined date"],
+      [{ path: "notes/x.md", date: "2024-02-29", repository: "guessed" }, "unowned field"],
+    ];
+    for (const [item, label] of malformed)
+      assert.throws(() => admitTermRecord({ ...source, provenance: { sources: [item] } }), /provenance source/u, label);
+    for (const repeat of [["duplicate", "duplicate"],
+      [{ path: "notes/x.md", date: "2024-02-29" }, { date: "2024-02-29", path: "notes/x.md" }]])
+      assert.throws(() => admitTermRecord({ ...source, provenance: { sources: repeat } }), /unique array/u);
     assert.throws(() => admitTermRecord({ ...source, relations: { "unvetted-key": "system" } }), /predicate is not authorized/u);
     assert.throws(() => admitTermRecord({ ...source, untypedResource: true }), /term record does not admit/u);
     process.stdout.write(JSON.stringify({ kind: "term-schema-package-receipt.v1", admitted: true, refusedUnvettedPredicate: true, refusedUnknownResource: true, vocabularySize: keys.length }));

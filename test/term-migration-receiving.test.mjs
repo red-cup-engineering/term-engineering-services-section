@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { recognizeTermMarkdown } from "@red-cup-engineering/term-engineering-services-section/carrier";
-import { planTermMigration, prepareDescriptionBridge, seatDescriptionOverlay, verifyMigrationMaterialization }
+import { readTermMarkdown, recognizeTermMarkdown } from "@red-cup-engineering/term-engineering-services-section/carrier";
+import { planTermMigration, prepareDescriptionBridge, prepareMarkdownCorpusCleanupDocument, seatDescriptionOverlay, verifyMigrationMaterialization }
   from "@red-cup-engineering/term-engineering-services-section/migration";
 
 test("migration hands canonical term fields, not recognition diagnostics, to its strict writer", () => {
@@ -32,4 +32,36 @@ test("a description can be seated without weakening original term source binding
   assert.equal(admitted.description,description);
   assert.equal(admitted.body,"Water flowing.");
   assert.throws(()=>seatDescriptionOverlay(terms,[{...request,sourceSha256:"0".repeat(64),description}]),/witness mismatch/u);
+});
+
+test("legacy roam references append only new strings and keep authored locator records", () => {
+  const text = `---
+name: Runoff
+provenance:
+  sources:
+    - path: historical/first.md
+      date: 2024-02-29
+    - https://example.org/existing
+    - path: historical/second.md
+roam-refs: "https://example.org/existing https://example.org/new [cite:@runoff2024]"
+---
+
+Water flowing over land.
+`;
+  const result = prepareMarkdownCorpusCleanupDocument({ relativePath: "content/text/glossary/terms/runoff.md", text });
+  assert.equal(result.disposition, "planned", result.reason);
+  const original = readTermMarkdown(text);
+  const planned = readTermMarkdown(result.output);
+  assert.equal(planned.body, original.body);
+  assert.equal(Object.hasOwn(planned.frontmatter, "roam-refs"), false);
+  assert.deepEqual(planned.frontmatter.provenance.sources, [
+    ...original.frontmatter.provenance.sources, "https://example.org/new", "[cite:@runoff2024]",
+  ]);
+  const recognized = recognizeTermMarkdown({ filename: "runoff.md", text: result.output });
+  assert.equal(recognized.admitted, true, JSON.stringify(recognized.findings));
+  assert.equal(recognized.provenance.sources[0].date, "2024-02-29");
+
+  const malformed = text.replace(/  sources:\n[\s\S]*?(?=roam-refs:)/u, "  sources: legacy-scalar\n");
+  assert.equal(prepareMarkdownCorpusCleanupDocument({ relativePath: "content/text/glossary/terms/runoff.md",
+    text: malformed }).disposition, "refused");
 });

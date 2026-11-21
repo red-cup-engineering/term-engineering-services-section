@@ -334,7 +334,14 @@ function foldRoamRefs(text, actions) {
   if (provenance === null || typeof provenance !== "object" || Array.isArray(provenance)) throw new TypeError("provenance must be a map to receive roam-refs");
   const refs = list(frontmatter["roam-refs"]).flatMap((value) => String(value).split(/\s+/u)).map((value) => value.replace(/\\/gu, "").replace(/^['"]|['"]$/gu, "").trim()).filter(Boolean);
   if (refs.length === 0) return text;
-  const sources = [...new Set([...list(provenance.sources).map(String), ...refs])];
+  const existing = provenance.sources;
+  if (existing !== undefined && !Array.isArray(existing)) throw new TypeError("provenance.sources must be an array to receive roam-refs");
+  const sources = [...(existing ?? [])];
+  const knownRefs = new Set(sources.filter((source) => typeof source === "string"));
+  for (const ref of refs) if (!knownRefs.has(ref)) {
+    sources.push(ref);
+    knownRefs.add(ref);
+  }
   let output = mutateMarkdownFrontmatter(text, { mode: "set", key: "provenance", value: { ...provenance, sources } });
   output = mutateMarkdownFrontmatter(output, { mode: "delete", keys: ["roam-refs"] });
   actions.push(Object.freeze({ operation: "fold-frontmatter-key-into-provenance-sources", key: "roam-refs", values: Object.freeze(refs) }));
