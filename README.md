@@ -152,3 +152,26 @@ The bound `createGlossaryIndexReader(index).search(q)` now interprets a canonica
 ### Direct canonical-token-to-claim reading (candidate)
 
 After a lexical hit produces its source-native SignCell `token`, the original `glossaryClaimsAt(foam, {token, predicate?})` now selects that **exact existing typed concept** in the supplied, already audience-admitted SignGraph foam. It no longer requires the caller to reverse-derive a scheme from an NI address; the original `{scheme,identity,predicate?}` form stays supported. Glossary sign tokens, unknown tokens, mixed selectors and local-cut boundary-only concept references refuse; they never become absent/denied domain claims. Source EAVT edge identities and the original SignCell FOUR knowledge joins remain unchanged. This is a producer-side read, not a standalone Actor authorization, new truth regime, SPARQL engine or deployed MUD operation.
+
+
+### Index a detached service section
+
+The physical checkout root and the owning concept scheme are different
+coordinates. When projecting a detached child repository, supply its
+verified mount relative to the same aggregate that you will query:
+
+```sh
+project-set-of-term-records --root ./section-checkout \
+  --section-path services/philosophy-science-services-section/services/relationality-science-services-section \
+  --out ./relationality-index.json
+```
+
+The SKOS and foam commands accept the same `--section-path`. In code pass
+`sectionPath` to `projectGlossaryIndex`. A record keeps its original
+checkout-relative document path; only the scheme and its SignCell and SKOS
+identities use the supplied ownership mount. Indexing the same section in
+the assembled tree or from the detached checkout then names the same
+concept. Two different owners with the same sign stay distinct. Do not
+derive the mount from the checkout folder name. Leave it empty only when
+indexing the aggregate itself. Use the owning sections' actual submodule
+declarations to verify a mount.
