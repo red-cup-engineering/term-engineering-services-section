@@ -41,8 +41,7 @@
     "test/glossary-section-receiving.test.mjs"
   ],
   "scripts": {
-    "check": "node --check src/*.mjs && node --check scripts/*.mjs && node --check apps/*.mjs && node --check schemas/glossary/term/*.mjs",
-    "test": "node --test test/*.test.mjs"
+    "check": "node --check src/*.mjs && node --check scripts/*.mjs && node --check apps/*.mjs && node --check schemas/glossary/term/*.mjs"
   },
   "dependencies": {
     "@red-cup-engineering/computer-filepath-engineering-services-section": "^0.1.3",
