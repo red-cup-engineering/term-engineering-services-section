@@ -1,0 +1,284 @@
+{
+  "accessed-through": {
+    "range": "carrier"
+  },
+  "acts-on": {
+    "range": "carrier"
+  },
+  "acts-through": {
+    "range": "carrier"
+  },
+  "assessed-by": {
+    "range": "carrier"
+  },
+  "autonomy": {
+    "range": "literal"
+  },
+  "baseline-cost": {
+    "range": "literal"
+  },
+  "bounded-by": {
+    "range": "carrier"
+  },
+  "built-from": {
+    "range": "carrier"
+  },
+  "caller": {
+    "range": "carrier"
+  },
+  "communication-via": {
+    "range": "carrier"
+  },
+  "components": {
+    "range": "carrier"
+  },
+  "composed-of": {
+    "range": "carrier"
+  },
+  "conditions": {
+    "range": "carrier"
+  },
+  "constraint": {
+    "range": "carrier"
+  },
+  "contract": {
+    "range": "carrier"
+  },
+  "contrasts-with": {
+    "range": "carrier"
+  },
+  "control-flow": {
+    "range": "literal"
+  },
+  "controlled-by": {
+    "range": "carrier"
+  },
+  "controls": {
+    "range": "carrier"
+  },
+  "coordinated-by": {
+    "range": "carrier"
+  },
+  "coordinates": {
+    "range": "carrier"
+  },
+  "cost": {
+    "range": "carrier"
+  },
+  "cost-of": {
+    "range": "carrier"
+  },
+  "decisions": {
+    "range": "literal"
+  },
+  "delivered-via": {
+    "range": "carrier"
+  },
+  "delivers": {
+    "range": "carrier"
+  },
+  "distinction": {
+    "range": "literal"
+  },
+  "distinguished-from": {
+    "range": "carrier"
+  },
+  "dual-of": {
+    "range": "carrier"
+  },
+  "enables": {
+    "range": "carrier"
+  },
+  "enforcement": {
+    "range": "carrier"
+  },
+  "executor": {
+    "range": "carrier"
+  },
+  "extends": {
+    "range": "carrier"
+  },
+  "frameworks": {
+    "range": "carrier"
+  },
+  "governed-by": {
+    "range": "carrier"
+  },
+  "governs": {
+    "range": "carrier"
+  },
+  "instance-of": {
+    "range": "carrier"
+  },
+  "measures": {
+    "range": "carrier"
+  },
+  "optimizes": {
+    "range": "carrier"
+  },
+  "origins": {
+    "range": "carrier"
+  },
+  "output-format": {
+    "range": "literal"
+  },
+  "pattern-of": {
+    "range": "carrier"
+  },
+  "patterns": {
+    "range": "carrier"
+  },
+  "produced-by": {
+    "range": "carrier"
+  },
+  "property-of": {
+    "range": "carrier"
+  },
+  "protocol": {
+    "range": "carrier"
+  },
+  "protocols": {
+    "range": "carrier"
+  },
+  "requires": {
+    "range": "carrier"
+  },
+  "retrieval-via": {
+    "range": "carrier"
+  },
+  "satisfies": {
+    "range": "carrier"
+  },
+  "saturation-threshold": {
+    "range": "literal"
+  },
+  "schema-format": {
+    "range": "literal"
+  },
+  "state-kept-by": {
+    "range": "carrier"
+  },
+  "tradeoff": {
+    "range": "literal"
+  },
+  "types": {
+    "range": "carrier"
+  },
+  "uses": {
+    "range": "carrier"
+  },
+  "validated-by": {
+    "range": "carrier"
+  },
+  "workflow-variant": {
+    "range": "carrier"
+  },
+  "treated-by": {
+    "range": "carrier"
+  },
+  "triggered-by": {
+    "range": "carrier"
+  },
+  "operationalized-by": {
+    "range": "carrier"
+  },
+  "subtype-of": {
+    "range": "carrier"
+  },
+  "mediated-by": {
+    "range": "carrier"
+  },
+  "overlaps-with": {
+    "range": "carrier"
+  },
+  "shares-symptom-with": {
+    "range": "carrier"
+  },
+  "permits": {
+    "range": "carrier"
+  },
+  "transrepresses": {
+    "range": "carrier"
+  },
+  "impairs": {
+    "range": "carrier"
+  },
+  "part-of": {
+    "range": "carrier"
+  },
+  "derives-from": {
+    "range": "carrier"
+  },
+  "cites": {
+    "range": "carrier"
+  },
+  "see-also": {
+    "range": "carrier"
+  },
+  "specialization": {
+    "range": "carrier"
+  },
+  "properties": {
+    "range": "literal"
+  },
+  "component-of": {
+    "range": "carrier"
+  },
+  "produces": {
+    "range": "carrier"
+  },
+  "contains": {
+    "range": "carrier"
+  },
+  "introduces": {
+    "range": "carrier"
+  },
+  "class": {
+    "range": "literal"
+  },
+  "term-kind": {
+    "range": "literal"
+  },
+  "analogous-to": {
+    "range": "carrier"
+  },
+  "measured-by": {
+    "range": "carrier"
+  },
+  "determines": {
+    "range": "carrier"
+  },
+  "restricts": {
+    "range": "carrier"
+  },
+  "diagnosed-by": {
+    "range": "carrier"
+  },
+  "optimized-by": {
+    "range": "carrier"
+  },
+  "depends-on": {
+    "range": "carrier"
+  },
+  "realizes": {
+    "range": "carrier"
+  },
+  "locates": {
+    "range": "carrier"
+  },
+  "treats": {
+    "range": "carrier"
+  },
+  "affects": {
+    "range": "carrier"
+  },
+  "includes": {
+    "range": "carrier"
+  },
+  "source-plant": {
+    "range": "carrier"
+  },
+  "symbol": {
+    "range": "literal"
+  }
+}

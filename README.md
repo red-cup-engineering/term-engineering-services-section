@@ -1,0 +1,191 @@
+# @red-cup-engineering/term-engineering-services-section
+
+<!-- 561-group-standards:badges:start -->
+[![Red Cup Engineering](https://img.shields.io/badge/561%20Group-Red%20Cup%20Engineering-c0392b)](https://github.com/red-cup-engineering)
+[![License: MIT](https://img.shields.io/badge/license-MIT-c0392b)](LICENSE)
+[![Indigenous data: CARE](https://img.shields.io/badge/Indigenous%20data-CARE-4b6f44)](https://github.com/red-cup-engineering/.github/blob/main/GOVERNANCE.md)
+[![Tips welcome](https://img.shields.io/badge/tips-welcome-d4a017)](https://github.com/561-group/.github/blob/main/TIPS.md)
+<!-- 561-group-standards:badges:end -->
+
+Engineering policy and operations for semantically admitted Markdown glossary terms and their filename-keyword knowledge web.
+
+Engineering policy and operations for semantically admitted Markdown glossary terms and their filename-keyword knowledge web.
+
+## Verbs (`term` CLI, `apps/term-cli.mjs`)
+
+- `render` — renders a term record to Markdown; reads a term record JSON object on stdin.
+- `read` — reads one admitted term by path (argv[3]); reads nothing on stdin.
+- `recognize` — parses a term Markdown carrier without admitting it; reads `{text, filename}` JSON on stdin.
+- `admit` — recognizes and semantically admits a term Markdown carrier; reads `{text, filename, authorizedRelationKeys}` JSON on stdin.
+- `write` — admits and durably writes one term carrier; reads a term write request JSON object on stdin.
+- `index` — derives the glossary keyword web from a term directory (argv[3], default: cwd); reads nothing on stdin.
+- `write-set` — writes each term in an array of write requests, then derives one loss-accounted web; reads a JSON array on stdin.
+
+Run `term --help` (or with no arguments) for the same summary on stdout.
+An unknown verb prints it to stderr and exits 2.
+
+## Writing a term
+
+The write contract — request shape, frontmatter admission, relation-key authorization, and evidence requirements — is documented in [`scripts/write-term.md`](scripts/write-term.md).
+Read it before drafting any `write` or `write-set` request.
+`writeTerm` enforces the evidence half of that contract (`admitSemanticEvidence`): a request without sources, without a definition, distinction and consequence each witnessed verbatim in the body (whitespace collapsed), or citing an absolute-path source that does not exist is refused before anything is written.
+A term cites emsenn utterances it answers in `provenance.utterances`, as the `ni:///sha-256;…` addresses the leader-utterances records use.
+
+## Carrier identity and assertions
+
+Carrier admission checks the source representation: a matching identity, normalized metadata, a nonempty body and the admitted assertion vocabulary. It does not infer whether prose supplies a noncircular definition or whether its claims are true. The author must read and assess the cited sources. The writer still checks for source locators and witnessed definition, distinction and consequence excerpts before writing; their presence is not proof of the scientific claims.
+
+The original Lenticule Science schema (`schemas/glossary/term/term.schema.json`, `$id: glossary/terms/term`) is a broader **Draft 2020-12 scientific resource**; it permits extensible source assertions. Its independently source-qualified original is `lenticule-science/science-services-section` → `services/information-science-services-section/services/communication-science-services-section/services/glossary-science-services-section/services/term-science-services-section/schemas/glossary/terms/term.schema.json` ([verified Science source](https://github.com/lenticule-science/term-science-services-section/blob/38eb4e2a46ddb8180269c46df4fd8239dc46348c/schemas/glossary/terms/term.schema.json), blob `4d49c70733ee064a9765b05d355f5b615844015e`). Engineering **must not reuse the same `$id` for a different admission predicate**.
+
+The existing `src/term-science-schema.mjs` now derives a distinct engineering refinement (`schemas/glossary/term/term-admission.schema.json`, `$id: https://561.group/ns/term-engineering/admitted-term/v1`) from the original scientific schema plus the original named-predicate vocabulary. The derived admission profile closes the top-level carrier fields, while science retains its broader declared possibilities. The package exports both resources and the source-owned `./term-schema` module imports the *engineering* profile for `admitTermRecord`. `TERM_KEYS` is derived from that exact profile. The source and downstream types therefore have explicit, independently testable boundaries.
+
+Reproduce the profile with `node scripts/project-term-science-schema.mjs --admission schemas/glossary/term/term.schema.json schemas/glossary/term/relation-predicates.json schemas/glossary/term/term-admission.schema.json`. Do not claim source Science revisions are installed merely because this checked-in Science projection exists; independently select its source when verifying a new scientific revision.
+
+`provenance.sources` keeps original citation strings and closed records with an exact root-relative `path` and optional original calendar `date`. These records preserve a source locator; they do not identify a repository, resolve the source, confer write evidence, or produce a reviewed RDF IRI. Dates and order survive recognition, rendering, and term metadata normalization.
+
+The admission path (`recognizeTermMarkdown`, `admitTermMarkdown`, and the `*InVault` wrappers) reads original Markdown without rewriting its bytes, then assigns claims to typed roles:
+
+- **Identity.**
+  `identity` is derived from the Markdown filename stem when the frontmatter states none.
+  An explicit `identity` must still equal the stem; a mismatch refuses admission.
+- **Assertions.**
+  `type: intelligence` and `creator: Homo sapiens` are first-class term attributes. Recognized carrier metadata such as dates and tags becomes the typed `provenance` projection; authorized relation predicates such as `requires: [light]` become `relations`; declared FARS `params`/`ast`/`output` become `status-function`. An existing nested statement with conflicting content is a **refusal**, not a silent overwrite. An unknown field is not an arbitrary extension point or an automatically authorized predicate; it remains source-authored but unadmitted until the appropriate upstream type, vocabulary and consuming purpose are established. The read does not mutate the authored Markdown.
+- **Relationship predicates and types.**
+  The original `schemas/glossary/term/relation-predicates.json` declares 94
+  authorized predicate keys (81 naming another carrier, 13 naming a literal).
+  The **Engineering `term-admission.schema.json` profile** constrains
+  `relations` property names to exactly those keys, and the native
+  `admitTermRecord` rejects an otherwise valid-looking undeclared predicate
+  before rendering. The Markdown reader uses the same authority, including
+  a caller's narrower authorized subset. Predicate range declarations are
+  carried into the original glossary-index and SKOS/JSON-LD projection; this
+  is **not** evidence that any cited target is resolved, source-authenticated
+  or independently verified. Extending the vocabulary requires an upstream
+  typed predicate and separate downstream receiving, never automatic
+  acceptance of an arbitrary frontmatter key.
+- **Visibility.**
+  `visibility` is `public` or `authenticated` (the default when absent). Only `public` opens a term to anonymous surfaces such as the public vocabulary and the knowledge garden's public tree.
+
+**Unstated versus empty frontmatter.** The original upstream Markdown codec distinguishes no YAML envelope (no authored frontmatter) from an explicit YAML envelope that decodes to `null`. The former permits a filename/H1-derived default term name; the latter is refused as a non-object term source. No generic Markdown parser or Science concept rule is silently rewritten to turn explicit YAML null into a claim.
+
+## Corpus cleanup
+
+`planMarkdownCorpusCleanup` (in `src/term-migration.mjs`) plans byte-preserving frontmatter edits over a Markdown corpus; `scripts/apply-set-of-terms.mjs` applies a plan (or any byte-matching subset of it) behind per-file revision guards, with a backup and restore on failure.
+In glossary term directories it folds legacy org-roam, Obsidian, and Digital Garden keys into admitted slots before anything is deleted, so no assertion is lost:
+
+- `defines`, `roam_aliases`, `roam_alias`, and a `title` that differs from `name` become `aliases` (a `title` equal to `name` is just removed).
+- `related` and `related-to` become `see-also` (inside `relations` when the carrier already nests them); a Markdown link keeps its target's stem.
+- `date` and `created` become `date-created`; one that disagrees with an existing `date-created` stays put.
+- `roam_refs` becomes `provenance.sources`.
+- `dg-publish: true` becomes `visibility: public`; a flag that disagrees with the stated visibility stays put, and a `dg-permalink` equal to the stem is removed.
+
+A key the fold cannot place without guessing is left where it is, which keeps its carrier unadmitted and visible to the next pass.
+
+## Tests
+
+`npm test` runs the package's `node --test` suite.
+
+## Glossary index
+
+`scripts/project-set-of-term-records.mjs` (bin `project-set-of-term-records`) walks a root for glossary carriers, the Markdown files under any section's `content/text/glossary/{terms,concepts,topics}/`, reads each through the house file-read service, and writes a deterministic `computer-glossary-index.v2` JSON index (`--root <dir> --out <file.json>`).
+Terms, concepts and topics are one carrier kind, admitted by the same rules.
+`src/glossary-index.mjs` (the `./glossary-index` export) is the pure, filesystem-free reader over that index: `projectGlossaryIndex({ root, documents })` derives it and `createGlossaryIndexReader(index)` binds `readings(signOrToken)`, `resolve(signOrToken)`, `neighborhood(signOrToken)`, and `search(query, { limit })`. A spelling can name several local concepts; `readings` preserves all, and `resolve` refuses ambiguous words or concepts with multiple definition facets until the caller supplies `{ identity, scheme, facet? }` or `{ token, facet? }`. Every search hit now carries native SignCell `sign` and scheme-specific `token` addresses, plus `scheme` and `facet`. Directed neighborhoods resolve a source term’s outgoing and incoming carrier relations by the same nearest-scheme rule as SKOS and the foam; an unbound target remains a `targetSign` with `unresolved: true` instead of a fabricated concept. This reading does **not** confer Actor knowledge or an access grant.
+Each record carries `section` (the first `services/<name>` beneath the root), `scheme` (the whole root-relative directory owning the glossary), `facet` (`term`, `concept` or `topic`), and `token` (its concept token, below), so one index over the whole 561 Group still tells every section's glossary apart.
+`createNearestSchemeResolver(records)` is the one rule for what a relation's target identity names: the record in the nearest scheme up then down the section tree, with an equally near tie left unresolved. The SKOS and foam projections both use it.
+It is generic over any glossary; nothing domain-specific is named here.
+
+## Glossary tokens
+
+`src/glossary-token.mjs` (the `./glossary-token` export) makes every glossary carrier SignCell typed marks (`@red-cup-engineering/signcell/typed-mark`), each identified by its semiotic content address. There are four kinds:
+
+- a **sign**, `{ identity }`: the bare word, shared by every section that files it;
+- a **concept**, `{ scheme, identity }`: one section's meaning of a sign, stable while its definition is revised, so relations aimed at it do not move when its text does (`glossaryConceptId` computes it without minting; it is each index record's `token`);
+- a **definition**: one admitted carrier's content without its file location, bound to its concept, readdressed whenever the carrier changes;
+- a **scheme**, `{ scheme }`: the section that files the concept.
+
+Schemes are named by `schemeIriPath`, so a concept's token and its SKOS IRI name the same section.
+
+## Glossary foam
+
+`src/glossary-foam.mjs` (the `./glossary-foam` export) projects a glossary index into one semiotic foam (schema `computer-glossary-foam.v1`): a SignCell `sign.graph` whose cells are the tokens and whose edges each carry the definition that asserts them as witness.
+
+- **Edges.** Every concept has `skos:notation` to its sign, `skos:inScheme` to its scheme and `skos:definition` to its definition; keywords are `skos:broader`, and every carrier-range relation stays under its house predicate IRI (`https://561.group/ns/predicate/<name>`), as in the SKOS projection.
+- **Cuts.** Each section's glossary is one graph cut with its own content address; the foam is the cuts glued (`glueSignGraphs`). Revising one definition readdresses that definition, its section's cut and the foam, never its concept or another section's cut.
+- **Wanted signs.** A relation whose target no projected concept answers lands on the target's sign, so no assertion is lost; signs that relations reach but no carrier defines are listed in `wanted`, most wanted first. Targets that are not carrier identities (free text) are counted as `unaddressableTargets`.
+- **Diagnostics.** A concept filed twice in one section (a term and a topic of one identity) keeps both definitions and is reported.
+- **Audience.** As in the SKOS projection.
+
+For an interactive language-space view, the **same** `projectGlossaryFoam(index, { audience, concept: { scheme, identity } })` producer accepts one exact local concept and projects only its original definition cuts (including multiple definition facets). Nearest-scheme resolution still uses all records admitted for the supplied audience, so cross-scheme targets remain typed boundary references; the producer does not invent their definitions. The returned `localConcept` records the cut and `accounting.outsideLocalCut` records definitions not selected. A `glossaryClaimsAt` query against that local foam rejects a different concept even if its token appears as a boundary reference: an unprojected definition must not be misrepresented as an unknown claim. Supplying an already authorized Actor-specific input corpus remains the *host* responsibility; choosing `concept` or `audience` alone is not a knowledge grant.
+
+The no-`concept` form retains the original full foam shape and accounting, for complete vocabulary publication. Local cuts reduce graph materialization for one concept, **not** the cost of acquiring and admitting the upstream glossary index; an installed World or CAIRN adapter must also provide incremental, actor-local source reads and revisions for true real-time experience.
+`scripts/project-glossary-foam.mjs` (bin `project-glossary-foam`, `--root --index --out [--audience public|authenticated]`) indexes a root and writes both. Over the whole 561 Group the authenticated foam takes about 75 seconds and 850 MB, and is about 40 MB; it is derived on demand.
+
+## Native witnessed SignCell claim readings
+
+`./glossary-claims` exports `glossaryClaimsAt(foam, { scheme, identity, predicate? })`. It selects the exact typed concept's source edges from the existing SignGraph `querySignGraph` index and admits their native typed subject/predicate/object and authoring-definition witness through SignCell `createSignClaim`. Multiple definition witnesses of the *same* claim join with `joinClaimsKnowledge`, preserving canonical claim identity and each original source EAVT edge. Native SignCell `sectionReading` reports the separate FOUR evidence/presence readings. It does not infer a refutation from absence, treat a written definition as externally verified truth, or identify a glossary token with an Obsmetrologia-generated Kinematic point.
+
+The caller must supply an original source- and audience-admitted `projectGlossaryFoam` result. These pure readers **do not authenticate Actors or confer access rights**. Source owners must admit each Actor's index/foam and supply the currently permitted cut to CAIRN/MetroPlat; do not mount an authenticated aggregate directly as a public query surface. The source foam's semantic graph was incorrectly imported from `signcell/semantic-graph`; it is now imported from its real `signgraph/semantic-graph` owner, with an exact SignGraph source-candidate dependency. Dependency closure, release availability, installed Cold Red Gate reader and native test execution remain to be received and must not be inferred from source-only regression cases.
+
+## SKOS vocabulary
+
+`src/glossary-skos.mjs` (the `./glossary-skos` export) projects a glossary index into a [W3C SKOS](https://www.w3.org/TR/skos-reference/) vocabulary serialized as JSON-LD (schema `computer-glossary-skos.v3`), so RDF, thesaurus, and schema.org consumers can all read the house glossaries.
+Nodes come from the data layer's shared builders (`definedTermJsonLd`, `definedTermSetJsonLd` in `@red-cup-engineering/computer-triplet-serialized-content-engineering-services-section/schema-org`): each owning section is a `DefinedTermSet` and `skos:ConceptScheme`, and each admitted term a `DefinedTerm` and `skos:Concept`.
+
+- **IRIs.** A concept is `<base><scheme path>/<identity>` (base `https://561.group/knowledge/`); `schemeIriPath` drops the `services/` connectors, so an IRI depends on the section path alone, never on what else was indexed.
+- **Fields.** Name is `name`/`skos:prefLabel`, aliases `skos:altLabel`, the description schema.org `description`, the body `skos:definition`, the identity `termCode`/`skos:notation`, the concept token `dct:identifier`, the carrier `type` `dct:type`. A term and a topic of one identity in one section are one concept: the first is published and the rest counted as `refiledConcepts`.
+- **Relations.** Carrier-range relations and keywords resolve to the nearest projected concept in the section tree (a tie stays unresolved and is counted). `subtype-of`, `instance-of`, `part-of`, `component-of` and keywords become `skos:broader`; `types`, `components`, `composed-of`, `contains` and `includes` become `skos:narrower`; every other predicate becomes `skos:related`. Each also stays under its house predicate IRI (`https://561.group/ns/predicate/<name>`, the shape GEODE serves). Every reference is an `@id` node.
+- **Audience.** `audience: "public"` (the default) projects only terms whose own carrier says `visibility: public`, the house surface policy's single public opt-in; `"authenticated"` projects every admitted term. A term stating any `consent-status` is withheld from both.
+
+`scripts/project-glossary-skos.mjs` (bin `project-glossary-skos`, `--root --index --out [--base] [--audience public|authenticated]`) indexes a root and writes both.
+
+`recognizeTermDocument({ frontmatter, body, filename })` is the recognition path for a carrier some other reader already parsed (a vault room, say); `recognizeTermMarkdown` parses and delegates to it.
+
+Use `observeTermRelations({ frontmatter, admittedRelations })` from
+`./term-carrier` to read the original relation strings of an already parsed
+carrier, including a refused one. It preserves nested and top-level placement,
+verbatim strings and their order, including repetitions. When two declarations
+conflict, both are observable; strict recognition still refuses the carrier.
+An unknown nested field has no declared range. Pass normalized `relations`
+only from the admitted record for this carrier; the returned
+`admittedValue` is then the normalized match, or `null`. An observation does
+not resolve its target or authorize a source claim.
+
+### Multiscript lexical recovery and source concept identity (candidate)
+
+The glossary reader consumes the original Computer Text `segmentSearchWords` (UAX #29 / `Intl.Segmenter('und')`, candidate 0.1.1-dev.0) rather than an ASCII-only local regex. This is a *search ranking projection*, not a new tokenizer owner: native SignCell scheme-qualified concept addresses, authored aliases, original definitions, witness-bearing SignGraph claims and per-Actor source authorization remain unchanged. Full Chinese, Arabic, accented and other Unicode words can enter lexical retrieval; source-owned SKOS alternative labels are the only valid grounds for cross-language association, not similarity of tokens. ICU version/tailoring, supplier publication, source-local Node suite, and original CAIRN/MetroPlat receiver admission remain qualification requirements. Source candidate term version: 0.3.3-dev.0, not an installed release.
+
+
+The original `createGlossaryIndexReader` now binds a **source-cut lexical posting index** once, alongside its existing scheme/token readers. Searches intersect the request with the actually indexed label, alias, keyword and description keys before calculating the original name/alias/keyword/description scores; those scores retain existing weight semantics. Rebinding the reader to a newer admitted source cut is required after a glossary revision—lexical postings do not authorize access to any corpus or prove concept identity. Typed NI identifiers, authored source definitions and the existing SignGraph/SignCell witness path remain unchanged.
+
+**Source-only performance/equivalence assay (not a full installed benchmark):** actual source bodies for Computer Text and Term Engineering were run in isolated V8 with 400 synthetic already-admitted record stand-ins and NI identity stand-ins. Ten mixed Chinese, Latin, Arabic and absent-word searches exactly matched an independently computed full-scan score/order oracle. Source binding performed 1,932 word-segmentation calls; **20 repeated queries performed 20**, versus resegmenting every source field each query. The test is a bounded asymptotic/procedure comparison, not an external render-rate, an npm-installed suite, a sustained throughput claim or a complete Actor-authorized search receipt. `test/glossary-claims.test.mjs` also carries the native source-chain regression from a source-admitted Mandarin lexical hit through a local foam cut to its original SignCell witnessed notation claim, while refusing a foreign scheme and public hidden text.
+
+### Exact NI concept queries versus words (candidate)
+
+The bound `createGlossaryIndexReader(index).search(q)` now interprets a canonical SignCell concept `ni:///sha-256;…` token as an **exact lookup** in its already admitted concept index; it returns every source facet for that token, never fuzzy-matching substrings of an NI address. A malformed `ni:` carrier refuses instead of becoming an accidental lexical search; an unknown well-formed NI yields no readings but does not create a denial. Other queries are human lexical searches through the original Unicode Text supplier. The reader is not a remote or Actor-authorized query surface: CAIRN/MetroPlat must bind the authenticated source cut, visibility, and revision independently.
+
+### Direct canonical-token-to-claim reading (candidate)
+
+After a lexical hit produces its source-native SignCell `token`, the original `glossaryClaimsAt(foam, {token, predicate?})` now selects that **exact existing typed concept** in the supplied, already audience-admitted SignGraph foam. It no longer requires the caller to reverse-derive a scheme from an NI address; the original `{scheme,identity,predicate?}` form stays supported. Glossary sign tokens, unknown tokens, mixed selectors and local-cut boundary-only concept references refuse; they never become absent/denied domain claims. Source EAVT edge identities and the original SignCell FOUR knowledge joins remain unchanged. This is a producer-side read, not a standalone Actor authorization, new truth regime, SPARQL engine or deployed MUD operation.
+
+
+### Index a detached service section
+
+The physical checkout root and the owning concept scheme are different
+coordinates. When projecting a detached child repository, supply its
+verified mount relative to the same aggregate that you will query:
+
+```sh
+project-set-of-term-records --root ./section-checkout \
+  --section-path services/philosophy-science-services-section/services/relationality-science-services-section \
+  --out ./relationality-index.json
+```
+
+The SKOS and foam commands accept the same `--section-path`. In code pass
+`sectionPath` to `projectGlossaryIndex`. A record keeps its original
+checkout-relative document path; only the scheme and its SignCell and SKOS
+identities use the supplied ownership mount. Indexing the same section in
+the assembled tree or from the detached checkout then names the same
+concept. Two different owners with the same sign stay distinct. Do not
+derive the mount from the checkout folder name. Leave it empty only when
+indexing the aggregate itself. Use the owning sections' actual submodule
+declarations to verify a mount.
