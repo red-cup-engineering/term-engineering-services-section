@@ -10,6 +10,7 @@
   "exports": {
     "./carrier": "./src/term-carrier.mjs",
     "./migration": "./src/term-migration.mjs",
+    "./term-reform": "./src/term-reform.mjs",
     "./description": "./src/term-description.mjs",
     "./relations": "./src/term-relation-keys.mjs",
     "./glossary-index": "./src/glossary-index.mjs",
