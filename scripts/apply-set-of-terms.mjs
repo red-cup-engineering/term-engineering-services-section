@@ -1,11 +1,11 @@
 #!/usr/bin/env node
+import { sha256Hex } from "@red-cup-engineering/semiotic-content-address-system";
 import { chmod, copyFile, mkdir, mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute as isAbsoluteFilepath, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath as projectFileUrlFilepath } from "node:url";
 import { MarkdownFileRevisionConflict, markdownFileRevision, writeMarkdownFile } from "@red-cup-engineering/markdown-engineering-services-section/write-markdown-file";
 import { classifyMarkdownCorpusPath, planMarkdownCorpusCleanup, prepareMarkdownCorpusCleanupDocument, selectMarkdownCorpusCleanupTransactionsByActionKinds } from "../src/term-migration.mjs";
 import { readMarkdownCorpus } from "./plan-set-of-terms.mjs";
-import { sha256Hex } from "@red-cup-engineering/cryptographic-computer-data-engineering-services-section/integrity";
 
 
 function confined(root, relativePath) {
